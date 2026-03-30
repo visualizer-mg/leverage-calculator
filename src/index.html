@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d1117">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Leverage Calculator</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0d1117;
+      --bg-card: #161b22;
+      --bg-input: #0d1117;
+      --border: #30363d;
+      --border-focus: #58a6ff;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #484f58;
+      --accent-blue: #58a6ff;
+      --accent-green: #3fb950;
+      --accent-red: #f85149;
+      --accent-orange: #d29922;
+      --accent-purple: #bc8cff;
+      --radius: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-app-region: drag;
+      padding: 0;
+      overflow-y: auto;
+      user-select: none;
+    }
+
+    .titlebar {
+      height: 38px;
+      -webkit-app-region: drag;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .container {
+      -webkit-app-region: no-drag;
+      padding: 0 20px 24px;
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    /* ── Platform Tab Bar ── */
+    .platform-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 20px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .platform-tab-btn {
+      flex: 1;
+      background: var(--bg-input);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 0;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .platform-tab-btn:first-child { border-right: 1px solid var(--border); }
+
+    .platform-tab-btn:hover { color: var(--text-primary); }
+
+    .platform-tab-btn.active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .platform-tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: var(--accent-blue);
+      border-radius: 1px;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* ── Two-column layout ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .col-left, .col-right {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .col-left .card,
+    .col-right .card {
+      margin-bottom: 0;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+    }
+
+    .card-header .icon { font-size: 14px; }
+
+    /* ── Form elements ── */
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 16px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+    input[type="number"]:focus { border-color: var(--border-focus); }
+
+    .input-suffix {
+      position: absolute;
+      right: 12px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      pointer-events: none;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* ── SELL / BUY buttons ── */
+    .price-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .price-box {
+      flex: 1;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .price-box:hover {
+      border-color: var(--text-muted);
+    }
+
+    .price-box.sell.active {
+      border-color: var(--accent-red);
+      background: rgba(248, 81, 73, 0.08);
+    }
+
+    .price-box.buy.active {
+      border-color: var(--accent-green);
+      background: rgba(63, 185, 80, 0.08);
+    }
+
+    .price-box-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .price-box.sell .price-box-label { color: var(--accent-red); }
+    .price-box.buy .price-box-label { color: var(--accent-green); }
+
+    .price-box input[type="number"] {
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 18px;
+      font-weight: 700;
+      height: auto;
+    }
+
+    .price-box input[type="number"]:focus {
+      border: none;
+    }
+
+    .direction-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+
+    .direction-badge.long {
+      background: rgba(63, 185, 80, 0.15);
+      color: var(--accent-green);
+    }
+
+    .direction-badge.short {
+      background: rgba(248, 81, 73, 0.15);
+      color: var(--accent-red);
+    }
+
+    .spread-info {
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      margin-bottom: 12px;
+    }
+
+    /* ── Deal/Order Toggle ── */
+    .trade-type-toggle {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .trade-type-btn {
+      flex: 1;
+      background: var(--bg-input);
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 0;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .trade-type-btn:first-child { border-right: 1px solid var(--border); }
+
+    .trade-type-btn:hover { color: var(--text-primary); }
+
+    .trade-type-btn.active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .trade-type-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: var(--accent-blue);
+      border-radius: 1px;
+    }
+
+    .trade-type-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.4;
+      padding: 8px 10px;
+      background: rgba(88, 166, 255, 0.05);
+      border-radius: 6px;
+      border: 1px solid rgba(88, 166, 255, 0.1);
+    }
+
+    /* ── Order-specific fields ── */
+    .order-fields {
+      display: none;
+      margin-bottom: 12px;
+    }
+
+    .order-fields.visible {
+      display: block;
+    }
+
+    select {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      font-family: var(--font);
+      font-size: 14px;
+      padding: 10px 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    select:focus { border-color: var(--border-focus); }
+
+    /* ── Currency Toggle ── */
+    .currency-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3px;
+      margin-bottom: 16px;
+    }
+
+    .currency-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .currency-btn:hover { color: var(--text-primary); }
+    .currency-btn.active { background: var(--accent-blue); color: #fff; }
+
+    /* ── Mode Toggle ── */
+    .mode-toggle {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3px;
+      margin-bottom: 14px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .mode-btn:hover { color: var(--text-primary); }
+
+    .mode-btn.active {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Results ── */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .result-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+
+    .result-item.full-width { grid-column: 1 / -1; }
+
+    .result-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .result-value {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .result-value.green { color: var(--accent-green); }
+    .result-value.red { color: var(--accent-red); }
+    .result-value.blue { color: var(--accent-blue); }
+    .result-value.orange { color: var(--accent-orange); }
+    .result-value.purple { color: var(--accent-purple); }
+
+    .result-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-family: var(--font-mono);
+    }
+
+    /* ── P&L Scenarios ── */
+    .scenario-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .scenario-row:nth-child(even) { background: rgba(255,255,255,0.02); }
+
+    .scenario-price {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .scenario-points {
+      color: var(--text-muted);
+      font-size: 11px;
+      text-align: right;
+      min-width: 70px;
+    }
+
+    .scenario-pnl { font-weight: 600; text-align: right; min-width: 85px; }
+    .scenario-pnl.positive { color: var(--accent-green); }
+    .scenario-pnl.negative { color: var(--accent-red); }
+
+    .scenario-pct {
+      color: var(--text-muted);
+      font-size: 11px;
+      min-width: 55px;
+      text-align: right;
+    }
+
+    /* ── Risk Warning Banner ── */
+    .risk-banner {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .risk-banner.visible { display: block; }
+
+    .risk-banner.safe {
+      background: rgba(63, 185, 80, 0.08);
+      border: 1px solid rgba(63, 185, 80, 0.2);
+      color: var(--accent-green);
+    }
+
+    .risk-banner.warning {
+      background: rgba(210, 153, 34, 0.08);
+      border: 1px solid rgba(210, 153, 34, 0.2);
+      color: var(--accent-orange);
+    }
+
+    .risk-banner.danger {
+      background: rgba(248, 81, 73, 0.08);
+      border: 1px solid rgba(248, 81, 73, 0.2);
+      color: var(--accent-red);
+    }
+
+    .risk-banner strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* ── Progress bar for buffer ── */
+    .buffer-bar-track {
+      width: 100%;
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .buffer-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.2s, background 0.2s;
+    }
+
+    /* ── Helpers ── */
+    .row { display: flex; gap: 10px; }
+    .row .field { flex: 1; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    /* ═══ RESPONSIVE / MOBILE ═══ */
+    @media (max-width: 768px) {
+      .titlebar { display: none; }
+
+      .container { padding: 12px 12px 24px; }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .platform-tabs { margin-bottom: 14px; }
+      .platform-tab-btn { font-size: 15px; padding: 14px 0; }
+
+      .card { padding: 14px; }
+      .card-header { font-size: 10px; margin-bottom: 12px; }
+
+      input[type="number"] { font-size: 16px; padding: 12px; }
+      select { font-size: 16px; padding: 12px; }
+
+      .price-box input[type="number"] { font-size: 20px; }
+      .price-box { padding: 10px 12px; }
+
+      .row { flex-direction: column; gap: 0; }
+
+      .result-value { font-size: 18px; }
+
+      .scenario-row {
+        grid-template-columns: 1fr auto auto auto;
+        font-size: 12px;
+        padding: 8px 8px;
+        gap: 6px;
+      }
+      .scenario-points { font-size: 10px; min-width: 55px; }
+      .scenario-pnl { font-size: 12px; min-width: 70px; }
+      .scenario-pct { font-size: 10px; min-width: 45px; }
+
+      .currency-toggle { margin-bottom: 12px; }
+      .currency-btn { font-size: 14px; padding: 10px 0; }
+
+      .mode-toggle { margin-bottom: 12px; }
+      .mode-btn { font-size: 13px; padding: 10px 0; }
+
+      .trade-type-btn { font-size: 14px; padding: 12px 0; }
+
+      .result-grid { gap: 8px; }
+
+      .hint { font-size: 11px; }
+    }
+
+    @media (max-width: 380px) {
+      .scenario-row {
+        grid-template-columns: 1fr auto auto;
+      }
+      .scenario-pct { display: none; }
+
+      .result-grid { grid-template-columns: 1fr; }
+
+      .currency-btn { font-size: 12px; }
+    }
+
+    /* PWA safe area for notched phones */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      body {
+        padding-top: env(safe-area-inset-top);
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="titlebar">Leverage Calculator</div>
+
+<div class="container">
+
+  <!-- Platform Tab Bar -->
+  <div class="platform-tabs" id="platformTabs">
+    <button class="platform-tab-btn active" data-platform="ig-markets">IG Markets</button>
+    <button class="platform-tab-btn" data-platform="trading-212">Trading 212</button>
+  </div>
+
+  <!-- ═══ IG MARKETS TAB ═══ -->
+  <div id="ig-markets-tab" class="tab-content active">
+
+    <!-- Currency Toggle -->
+    <div class="currency-toggle" id="currencyToggle">
+      <button class="currency-btn active" data-currency="GBP">&pound; GBP</button>
+      <button class="currency-btn" data-currency="EUR">&euro; EUR</button>
+      <button class="currency-btn" data-currency="USD">$ USD</button>
+    </div>
+
+    <!-- Deal / Order Toggle -->
+    <div class="trade-type-toggle" id="tradeTypeToggle">
+      <button class="trade-type-btn active" data-type="deal">Deal</button>
+      <button class="trade-type-btn" data-type="order">Order</button>
+    </div>
+    <div class="trade-type-hint" id="tradeTypeHint">
+      <strong>Deal</strong> = Sofort kaufen/verkaufen zum aktuellen Marktpreis. Geht nur bei offenem Markt.
+    </div>
+
+    <div class="main-grid">
+
+      <!-- ═══ LEFT COLUMN: Trade Setup ═══ -->
+      <div class="col-left">
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#9881;</span> Trade Setup
+            <span class="direction-badge long" id="directionBadge">LONG</span>
+          </div>
+
+          <div class="field">
+            <label>Account Capital</label>
+            <div class="input-wrapper">
+              <input type="number" id="capital" value="1000" min="1" step="100">
+              <span class="input-suffix" id="capitalSuffix">&pound;</span>
+            </div>
+            <div class="hint">Your total IG account balance</div>
+          </div>
+
+          <!-- SELL / BUY Price -->
+          <div class="field">
+            <label>Index / Asset Price</label>
+            <div class="price-row">
+              <div class="price-box sell" id="sellBox" onclick="setDirection('short')">
+                <div class="price-box-label">SELL</div>
+                <input type="number" id="sellPrice" value="22100" min="0" step="1">
+              </div>
+              <div class="price-box buy active" id="buyBox" onclick="setDirection('long')">
+                <div class="price-box-label">BUY</div>
+                <input type="number" id="buyPrice" value="22107" min="0" step="1">
+              </div>
+            </div>
+            <div class="spread-info">Spread: <span id="spreadValue">7.0</span> pts</div>
+            <div class="hint">Click SELL for Short, BUY for Long. Use the price from IG.</div>
+          </div>
+
+          <!-- Order-specific: Price Level & Expiry -->
+          <div class="order-fields" id="orderFields">
+            <div class="row">
+              <div class="field">
+                <label>Price Level</label>
+                <div class="input-wrapper">
+                  <input type="number" id="priceLevel" value="22000" min="0" step="1">
+                  <span class="input-suffix">pts</span>
+                </div>
+                <div class="hint">Your desired entry price. Trade opens when market hits this level.</div>
+              </div>
+              <div class="field">
+                <label>Expiry</label>
+                <select id="expiry">
+                  <option value="gtc">Good till cancelled</option>
+                  <option value="today">End of day</option>
+                  <option value="week">End of week</option>
+                </select>
+                <div class="hint">How long the order stays active if not triggered.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode Toggle -->
+          <div class="mode-toggle" id="modeToggle">
+            <button class="mode-btn active" data-mode="leverage-to-size">Leverage &rarr; Size</button>
+            <button class="mode-btn" data-mode="size-to-leverage">Size &rarr; Leverage</button>
+          </div>
+
+          <div id="leverageInput" class="field">
+            <label>Desired Leverage</label>
+            <div class="input-wrapper">
+              <input type="number" id="leverage" value="5" min="0.1" step="0.5">
+              <span class="input-suffix">x</span>
+            </div>
+            <div class="hint">Multiplier for your capital. 5x = 5x gains &amp; losses.</div>
+          </div>
+
+          <div id="sizeInput" class="field" style="display:none;">
+            <label>Size (per point)</label>
+            <div class="input-wrapper">
+              <input type="number" id="sizeManual" value="0.20" min="0.01" step="0.01">
+              <span class="input-suffix" id="sizeSuffix">&pound;/pt</span>
+            </div>
+            <div class="hint">The value you enter in IG's "Size" field.</div>
+          </div>
+        </div>
+
+        <!-- Risk Management Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#9888;</span> Risk Check
+          </div>
+
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Free Buffer</div>
+              <div class="result-value green" id="resultBuffer">&pound;750</div>
+              <div class="result-sub" id="resultBufferPct">75% of capital</div>
+              <div class="buffer-bar-track">
+                <div class="buffer-bar-fill" id="bufferBar" style="width:75%; background: var(--accent-green);"></div>
+              </div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Margin Call at</div>
+              <div class="result-value red" id="resultMarginCall">3,750 pts</div>
+              <div class="result-sub" id="resultMarginCallPrice">DAX ~ 18,350</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Stop Loss Risk</div>
+              <div class="result-value" id="resultStopRisk" style="color: var(--text-secondary);">&pound;40</div>
+              <div class="result-sub" id="resultStopRiskPct">4.0% of capital</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Reward / Risk</div>
+              <div class="result-value blue" id="resultRR">2.0 : 1</div>
+              <div class="result-sub" id="resultRRsub">Limit &divide; Stop</div>
+            </div>
+          </div>
+
+          <div class="risk-banner" id="riskBanner">
+            <strong id="riskBannerTitle">Warning</strong>
+            <span id="riskBannerText"></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ RIGHT COLUMN: Results, P&L, Holding Costs ═══ -->
+      <div class="col-right">
+
+        <!-- Results Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#9889;</span> Results
+          </div>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Size</div>
+              <div class="result-value blue" id="resultSize">0.20</div>
+              <div class="result-sub" id="resultSizeUnit">&pound;/point</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Effective Leverage</div>
+              <div class="result-value purple" id="resultLeverage">5.0x</div>
+              <div class="result-sub" id="resultExposure">Exposure: &pound;5,000</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Margin Required</div>
+              <div class="result-value orange" id="resultMargin">&pound;250</div>
+              <div class="result-sub">5% of exposure</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Daily Financing</div>
+              <div class="result-value" id="resultFinancing" style="color: var(--text-secondary);">&pound;0.75</div>
+              <div class="result-sub">~5.5% p.a.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- P&L Scenarios Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#128200;</span> P&amp;L Scenarios
+          </div>
+          <div class="row" style="margin-bottom: 4px;">
+            <div class="field">
+              <label>Stop Distance</label>
+              <div class="input-wrapper">
+                <input type="number" id="stopDistance" value="200" min="1" step="10">
+                <span class="input-suffix">pts</span>
+              </div>
+              <div class="hint">Max points against you before auto-close</div>
+            </div>
+            <div class="field">
+              <label>Limit Distance</label>
+              <div class="input-wrapper">
+                <input type="number" id="limitDistance" value="400" min="1" step="10">
+                <span class="input-suffix">pts</span>
+              </div>
+              <div class="hint">Target points in your favor to take profit</div>
+            </div>
+          </div>
+          <div id="scenarioList" style="margin-top: 10px;"></div>
+        </div>
+
+        <!-- Financing Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#128176;</span> Holding Costs
+          </div>
+          <div class="field">
+            <label>Holding Period</label>
+            <div class="input-wrapper">
+              <input type="number" id="holdDays" value="5" min="1" step="1">
+              <span class="input-suffix">days</span>
+            </div>
+            <div class="hint">How many days you plan to keep the trade open</div>
+          </div>
+          <div class="result-grid" style="margin-top: 12px;">
+            <div class="result-item">
+              <div class="result-label">Total Financing</div>
+              <div class="result-value orange" id="resultTotalFinancing">&pound;3.75</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Cost as % of Capital</div>
+              <div class="result-value" id="resultFinancingPct" style="color: var(--text-secondary);">0.38%</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ TRADING 212 TAB ═══ -->
+  <div id="trading-212-tab" class="tab-content">
+
+    <div class="main-grid">
+
+      <!-- ═══ LEFT COLUMN ═══ -->
+      <div class="col-left">
+
+        <!-- Asset Setup Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#9881;</span> Asset Setup
+            <span class="direction-badge long" id="t212DirectionBadge">LONG</span>
+          </div>
+
+          <div class="field">
+            <label>Asset Name</label>
+            <input type="text" id="t212AssetName" value="AAPL" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 10px 12px; outline: none;">
+            <div class="hint">For reference (e.g., AAPL, EURUSD)</div>
+          </div>
+
+          <div class="field">
+            <label>Current Price</label>
+            <div class="input-wrapper">
+              <input type="number" id="t212Price" value="150.00" min="0" step="0.01">
+              <span class="input-suffix" id="t212PriceSuffix">&pound;</span>
+            </div>
+          </div>
+
+          <!-- SELL / BUY Direction -->
+          <div class="field">
+            <label>Direction</label>
+            <div class="price-row">
+              <div class="price-box sell" id="t212SellBox" onclick="t212SetDirection('short')">
+                <div class="price-box-label">SELL</div>
+              </div>
+              <div class="price-box buy active" id="t212BuyBox" onclick="t212SetDirection('long')">
+                <div class="price-box-label">BUY</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Spread</label>
+            <div class="input-wrapper">
+              <input type="number" id="t212Spread" value="0.02" min="0" step="0.01" readonly style="cursor: not-allowed;">
+              <span class="input-suffix" id="t212SpreadSuffix">&pound;</span>
+            </div>
+            <div class="hint">Bid-Ask spread (read-only for demo)</div>
+          </div>
+
+          <div class="field">
+            <label>Investment Value</label>
+            <div class="input-wrapper">
+              <input type="number" id="t212Investment" value="1000" min="1" step="100">
+              <span class="input-suffix" id="t212InvestmentSuffix">&pound;</span>
+            </div>
+            <div class="hint">Amount to invest in this position</div>
+          </div>
+
+          <div class="field">
+            <label>Leverage</label>
+            <div class="input-wrapper">
+              <input type="number" id="t212Leverage" value="5" min="1" step="1" max="20">
+              <span class="input-suffix">x</span>
+            </div>
+            <div class="hint">Multiplier (1x to 20x)</div>
+          </div>
+
+          <div class="field">
+            <label>Account Capital</label>
+            <div class="input-wrapper">
+              <input type="number" id="t212AccountCapital" value="5000" min="1" step="100">
+              <span class="input-suffix" id="t212CapitalSuffix">&pound;</span>
+            </div>
+            <div class="hint">Your total Trading 212 account balance</div>
+          </div>
+        </div>
+
+        <!-- Limit/Stop Calculator Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#128204;</span> Limit / Stop Calculator
+          </div>
+
+          <div class="mode-toggle" id="t212ModeToggle">
+            <button class="mode-btn active" data-mode="points">By Points</button>
+            <button class="mode-btn" data-mode="percent">By %</button>
+            <button class="mode-btn" data-mode="price">By Price</button>
+          </div>
+
+          <!-- Take Profit Section -->
+          <div style="margin-bottom: 16px;">
+            <label style="margin-bottom: 8px;">Take Profit</label>
+            <div class="field">
+              <div class="input-wrapper">
+                <input type="number" id="t212TPInput" value="3" min="0" step="0.01">
+                <span class="input-suffix" id="t212TPSuffix">pts</span>
+              </div>
+            </div>
+            <div class="result-item" style="margin-top: 8px;">
+              <div class="result-label">Target</div>
+              <div class="result-value green" id="t212TPTarget">153.00</div>
+              <div class="result-sub" id="t212TPSub">+3.00 pts, +£450.00</div>
+            </div>
+          </div>
+
+          <!-- Stop Loss Section -->
+          <div>
+            <label style="margin-bottom: 8px;">Stop Loss</label>
+            <div class="field">
+              <div class="input-wrapper">
+                <input type="number" id="t212SLInput" value="2" min="0" step="0.01">
+                <span class="input-suffix" id="t212SLSuffix">pts</span>
+              </div>
+            </div>
+            <div class="result-item" style="margin-top: 8px;">
+              <div class="result-label">Target</div>
+              <div class="result-value red" id="t212SLTarget">148.00</div>
+              <div class="result-sub" id="t212SLSub">-2.00 pts, -£300.00</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ RIGHT COLUMN ═══ -->
+      <div class="col-right">
+
+        <!-- Results Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#9889;</span> Results
+          </div>
+          <div class="result-grid">
+            <div class="result-item">
+              <div class="result-label">Position Value</div>
+              <div class="result-value blue" id="t212PositionValue">&pound;5,000</div>
+              <div class="result-sub">Investment × Leverage</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Effective Leverage</div>
+              <div class="result-value purple" id="t212EffectiveLeverage">5.0x</div>
+              <div class="result-sub" id="t212LeverageSub">Used</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Margin Required</div>
+              <div class="result-value orange" id="t212MarginRequired">&pound;1,000</div>
+              <div class="result-sub">20% of position</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Potential Profit</div>
+              <div class="result-value green" id="t212PotentialProfit">&pound;450.00</div>
+              <div class="result-sub" id="t212PotentialProfitPct">+45.0% of investment</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Potential Loss</div>
+              <div class="result-value red" id="t212PotentialLoss">-&pound;300.00</div>
+              <div class="result-sub" id="t212PotentialLossPct">-30.0% of investment</div>
+            </div>
+            <div class="result-item">
+              <div class="result-label">Reward / Risk</div>
+              <div class="result-value blue" id="t212RewardRisk">1.5 : 1</div>
+              <div class="result-sub">Profit ÷ Loss</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- P&L Scenarios Card -->
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">&#128200;</span> P&amp;L Scenarios
+          </div>
+          <div id="t212ScenarioList" style="margin-top: 0;"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // ═══ IG MARKETS CODE ═══
+  // ── State ──
+  const state = {
+    currency: 'GBP',
+    direction: 'long',
+    tradeType: 'deal', // 'deal' or 'order'
+    mode: 'leverage-to-size',
+    symbols: { GBP: '\u00A3', EUR: '\u20AC', USD: '$' },
+    annualRate: 0.055,
+    marginRate: 0.05,
+  };
+
+  // ── DOM refs ──
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  const els = {
+    capital: $('#capital'),
+    sellPrice: $('#sellPrice'),
+    buyPrice: $('#buyPrice'),
+    leverage: $('#leverage'),
+    sizeManual: $('#sizeManual'),
+    stopDistance: $('#stopDistance'),
+    limitDistance: $('#limitDistance'),
+    holdDays: $('#holdDays'),
+    priceLevel: $('#priceLevel'),
+    expiry: $('#expiry'),
+    orderFields: $('#orderFields'),
+    tradeTypeHint: $('#tradeTypeHint'),
+    sellBox: $('#sellBox'),
+    buyBox: $('#buyBox'),
+    directionBadge: $('#directionBadge'),
+    spreadValue: $('#spreadValue'),
+    resultSize: $('#resultSize'),
+    resultSizeUnit: $('#resultSizeUnit'),
+    resultLeverage: $('#resultLeverage'),
+    resultExposure: $('#resultExposure'),
+    resultMargin: $('#resultMargin'),
+    resultFinancing: $('#resultFinancing'),
+    resultTotalFinancing: $('#resultTotalFinancing'),
+    resultFinancingPct: $('#resultFinancingPct'),
+    scenarioList: $('#scenarioList'),
+    capitalSuffix: $('#capitalSuffix'),
+    sizeSuffix: $('#sizeSuffix'),
+    // risk
+    resultBuffer: $('#resultBuffer'),
+    resultBufferPct: $('#resultBufferPct'),
+    bufferBar: $('#bufferBar'),
+    resultMarginCall: $('#resultMarginCall'),
+    resultMarginCallPrice: $('#resultMarginCallPrice'),
+    resultStopRisk: $('#resultStopRisk'),
+    resultStopRiskPct: $('#resultStopRiskPct'),
+    resultRR: $('#resultRR'),
+    resultRRsub: $('#resultRRsub'),
+    riskBanner: $('#riskBanner'),
+    riskBannerTitle: $('#riskBannerTitle'),
+    riskBannerText: $('#riskBannerText'),
+  };
+
+  // ── Direction (Long/Short) ──
+  window.setDirection = function(dir) {
+    state.direction = dir;
+    if (dir === 'long') {
+      els.buyBox.classList.add('active');
+      els.sellBox.classList.remove('active');
+      els.directionBadge.textContent = 'LONG';
+      els.directionBadge.className = 'direction-badge long';
+    } else {
+      els.sellBox.classList.add('active');
+      els.buyBox.classList.remove('active');
+      els.directionBadge.textContent = 'SHORT';
+      els.directionBadge.className = 'direction-badge short';
+    }
+    calculate();
+  };
+
+  // ── Trade Type Toggle (Deal/Order) ──
+  $$('#tradeTypeToggle .trade-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#tradeTypeToggle .trade-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.tradeType = btn.dataset.type;
+
+      if (state.tradeType === 'order') {
+        els.orderFields.classList.add('visible');
+        els.tradeTypeHint.innerHTML = '<strong>Order</strong> = Trade wird erst er\u00f6ffnet, wenn der Markt dein <em>Price Level</em> erreicht. Bleibt aktiv bis Ablauf oder Stornierung.';
+      } else {
+        els.orderFields.classList.remove('visible');
+        els.tradeTypeHint.innerHTML = '<strong>Deal</strong> = Sofort kaufen/verkaufen zum aktuellen Marktpreis. Geht nur bei offenem Markt.';
+      }
+      calculate();
+    });
+  });
+
+  // ── Currency Toggle ──
+  $$('#currencyToggle .currency-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#currencyToggle .currency-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.currency = btn.dataset.currency;
+      updateSuffixes();
+      calculate();
+    });
+  });
+
+  // ── Mode Toggle ──
+  $$('#modeToggle .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#modeToggle .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.mode = btn.dataset.mode;
+
+      if (state.mode === 'leverage-to-size') {
+        $('#leverageInput').style.display = '';
+        $('#sizeInput').style.display = 'none';
+      } else {
+        $('#leverageInput').style.display = 'none';
+        $('#sizeInput').style.display = '';
+      }
+      calculate();
+    });
+  });
+
+  // ── Input listeners ──
+  [els.capital, els.sellPrice, els.buyPrice, els.priceLevel, els.leverage, els.sizeManual,
+   els.stopDistance, els.limitDistance, els.holdDays]
+    .forEach(el => el.addEventListener('input', calculate));
+
+  // ── Helpers ──
+  function sym() { return state.symbols[state.currency]; }
+
+  function fmt(n, decimals = 2) {
+    return n.toLocaleString('en-GB', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  function fmtCurrency(n, decimals = 2) {
+    return sym() + fmt(n, decimals);
+  }
+
+  function updateSuffixes() {
+    els.capitalSuffix.innerHTML = sym();
+    els.sizeSuffix.innerHTML = sym() + '/pt';
+  }
+
+  // ── Core Calculation ──
+  function calculate() {
+    const capital = parseFloat(els.capital.value) || 0;
+    const sellPrice = parseFloat(els.sellPrice.value) || 0;
+    const buyPrice = parseFloat(els.buyPrice.value) || 0;
+
+    // Use entry price based on direction & trade type
+    let price;
+    if (state.tradeType === 'order') {
+      price = parseFloat(els.priceLevel.value) || 0;
+    } else {
+      price = state.direction === 'long' ? buyPrice : sellPrice;
+    }
+    const spread = Math.abs(buyPrice - sellPrice);
+    els.spreadValue.textContent = fmt(spread, 1);
+
+    const stopDist = parseFloat(els.stopDistance.value) || 0;
+    const limitDist = parseFloat(els.limitDistance.value) || 0;
+    const holdDays = parseFloat(els.holdDays.value) || 0;
+
+    let size, leverage;
+
+    if (state.mode === 'leverage-to-size') {
+      leverage = parseFloat(els.leverage.value) || 0;
+      size = capital > 0 && price > 0 ? (capital * leverage) / price : 0;
+    } else {
+      size = parseFloat(els.sizeManual.value) || 0;
+      leverage = capital > 0 ? (price * size) / capital : 0;
+    }
+
+    const exposure = price * size;
+    const margin = exposure * state.marginRate;
+    const dailyFinancing = exposure * (state.annualRate / 365);
+    const totalFinancing = dailyFinancing * holdDays;
+    const financingPct = capital > 0 ? (totalFinancing / capital) * 100 : 0;
+
+    // ── Update results ──
+    els.resultSize.textContent = fmt(size, size < 1 ? 4 : 2);
+    els.resultSizeUnit.innerHTML = sym() + '/point';
+    els.resultLeverage.textContent = fmt(leverage, 1) + 'x';
+    els.resultExposure.innerHTML = 'Exposure: ' + fmtCurrency(exposure, 0);
+    els.resultMargin.innerHTML = fmtCurrency(margin, 0);
+    els.resultFinancing.innerHTML = fmtCurrency(dailyFinancing, 2);
+    els.resultTotalFinancing.innerHTML = fmtCurrency(totalFinancing, 2);
+    els.resultFinancingPct.textContent = fmt(financingPct, 2) + '%';
+
+    // ── P&L Scenarios ──
+    const scenarios = [];
+
+    if (limitDist > 0) {
+      scenarios.push({ points: limitDist, label: 'Limit (TP)' });
+    }
+
+    const posSteps = [500, 300, 200, 100, 50];
+    posSteps.forEach(p => {
+      if (p < limitDist && p > 0 && !scenarios.find(s => s.points === p)) {
+        scenarios.push({ points: p });
+      }
+    });
+
+    const negSteps = [-50, -100, -200, -300, -500];
+    negSteps.forEach(p => {
+      if (Math.abs(p) < stopDist && !scenarios.find(s => s.points === p)) {
+        scenarios.push({ points: p });
+      }
+    });
+
+    if (stopDist > 0) {
+      scenarios.push({ points: -stopDist, label: 'Stop (SL)' });
+    }
+
+    scenarios.sort((a, b) => b.points - a.points);
+
+    // For P&L: subtract spread cost, show target price
+    let html = '';
+    scenarios.forEach(s => {
+      const pnl = (s.points * size) - (spread * size); // spread is always a cost
+      const pnlPct = capital > 0 ? (pnl / capital) * 100 : 0;
+      const isPos = pnl >= 0;
+      const labelText = s.label ? ` <span style="font-size:9px;opacity:0.6">${s.label}</span>` : '';
+
+      // Target price: for long, price + points; for short, price - points
+      const targetPrice = state.direction === 'long'
+        ? price + s.points
+        : price - s.points;
+
+      html += `
+        <div class="scenario-row">
+          <span class="scenario-price">${fmt(targetPrice, 1)}${labelText}</span>
+          <span class="scenario-points">${s.points > 0 ? '+' : ''}${s.points} pts</span>
+          <span class="scenario-pnl ${isPos ? 'positive' : 'negative'}">${isPos ? '+' : ''}${fmtCurrency(pnl, 2)}</span>
+          <span class="scenario-pct">${isPos ? '+' : ''}${fmt(pnlPct, 1)}%</span>
+        </div>`;
+    });
+
+    els.scenarioList.innerHTML = html;
+
+    // ── Risk Management ──
+    const freeBuffer = capital - margin;
+    const bufferPct = capital > 0 ? (freeBuffer / capital) * 100 : 0;
+
+    els.resultBuffer.innerHTML = fmtCurrency(Math.max(freeBuffer, 0), 0);
+    els.resultBufferPct.textContent = fmt(Math.max(bufferPct, 0), 0) + '% of capital';
+
+    // Buffer bar
+    const barPct = Math.max(0, Math.min(100, bufferPct));
+    els.bufferBar.style.width = barPct + '%';
+    if (bufferPct > 50) {
+      els.bufferBar.style.background = 'var(--accent-green)';
+      els.resultBuffer.className = 'result-value green';
+    } else if (bufferPct > 20) {
+      els.bufferBar.style.background = 'var(--accent-orange)';
+      els.resultBuffer.className = 'result-value orange';
+    } else {
+      els.bufferBar.style.background = 'var(--accent-red)';
+      els.resultBuffer.className = 'result-value red';
+    }
+
+    // Margin call: how many points until buffer is gone
+    const marginCallPts = size > 0 ? freeBuffer / size : 0;
+    els.resultMarginCall.textContent = fmt(Math.max(marginCallPts, 0), 0) + ' pts';
+    // Show approximate price level where margin call hits
+    if (price > 0 && marginCallPts > 0) {
+      const mcPrice = state.direction === 'long'
+        ? price - marginCallPts
+        : price + marginCallPts;
+      els.resultMarginCallPrice.textContent = 'DAX ~ ' + fmt(Math.max(mcPrice, 0), 0);
+    } else {
+      els.resultMarginCallPrice.textContent = '—';
+    }
+
+    // Stop loss risk in currency and %
+    const stopRisk = stopDist * size;
+    const stopRiskPct = capital > 0 ? (stopRisk / capital) * 100 : 0;
+    els.resultStopRisk.innerHTML = fmtCurrency(stopRisk, 2);
+    els.resultStopRiskPct.textContent = fmt(stopRiskPct, 1) + '% of capital';
+
+    // Color the stop risk
+    if (stopRiskPct <= 3) {
+      els.resultStopRisk.style.color = 'var(--accent-green)';
+    } else if (stopRiskPct <= 5) {
+      els.resultStopRisk.style.color = 'var(--accent-orange)';
+    } else {
+      els.resultStopRisk.style.color = 'var(--accent-red)';
+    }
+
+    // Reward / Risk ratio
+    const rr = stopDist > 0 ? limitDist / stopDist : 0;
+    els.resultRR.textContent = rr > 0 ? fmt(rr, 1) + ' : 1' : '—';
+    els.resultRRsub.textContent = rr >= 2 ? 'Good ratio' : rr >= 1 ? 'Acceptable' : rr > 0 ? 'Below 1:1' : '—';
+
+    // ── Risk Warning Banner ──
+    const warnings = [];
+    if (stopRiskPct > 10) {
+      warnings.push('Stop loss risk is ' + fmt(stopRiskPct, 1) + '% of your capital — very aggressive.');
+    } else if (stopRiskPct > 5) {
+      warnings.push('Stop loss risk is ' + fmt(stopRiskPct, 1) + '% of your capital — consider tightening your stop or reducing size.');
+    }
+    if (bufferPct < 20 && bufferPct > 0) {
+      warnings.push('Only ' + fmt(bufferPct, 0) + '% buffer remaining — high margin call risk.');
+    }
+    if (freeBuffer <= 0) {
+      warnings.push('No free buffer! Margin exceeds capital — trade cannot be opened.');
+    }
+    if (rr > 0 && rr < 1) {
+      warnings.push('Reward/Risk below 1:1 — potential loss exceeds potential gain.');
+    }
+    if (marginCallPts > 0 && marginCallPts < stopDist) {
+      warnings.push('Margin call (' + fmt(marginCallPts, 0) + ' pts) hits BEFORE your stop (' + stopDist + ' pts) — your stop may not protect you.');
+    }
+
+    if (warnings.length > 0) {
+      els.riskBanner.classList.add('visible');
+      const hasDanger = freeBuffer <= 0 || stopRiskPct > 10 || (marginCallPts > 0 && marginCallPts < stopDist);
+      els.riskBanner.className = 'risk-banner visible ' + (hasDanger ? 'danger' : 'warning');
+      els.riskBannerTitle.textContent = hasDanger ? 'Danger' : 'Heads up';
+      els.riskBannerText.innerHTML = warnings.join('<br>');
+    } else {
+      els.riskBanner.classList.remove('visible');
+    }
+  }
+
+  // ── Initial ──
+  updateSuffixes();
+  calculate();
+
+  // ═══ TRADING 212 CODE ═══
+  const t212State = {
+    direction: 'long',
+    mode: 'points',
+    currency: 'GBP',
+    symbols: { GBP: '\u00A3', EUR: '\u20AC', USD: '$' },
+    marginRate: 0.2, // 20% margin for Trading 212
+  };
+
+  const t212Els = {
+    assetName: $('#t212AssetName'),
+    price: $('#t212Price'),
+    spread: $('#t212Spread'),
+    investment: $('#t212Investment'),
+    leverage: $('#t212Leverage'),
+    accountCapital: $('#t212AccountCapital'),
+    sellBox: $('#t212SellBox'),
+    buyBox: $('#t212BuyBox'),
+    directionBadge: $('#t212DirectionBadge'),
+    tpInput: $('#t212TPInput'),
+    slInput: $('#t212SLInput'),
+    tpTarget: $('#t212TPTarget'),
+    tpSub: $('#t212TPSub'),
+    slTarget: $('#t212SLTarget'),
+    slSub: $('#t212SLSub'),
+    tpSuffix: $('#t212TPSuffix'),
+    slSuffix: $('#t212SLSuffix'),
+    positionValue: $('#t212PositionValue'),
+    effectiveLeverage: $('#t212EffectiveLeverage'),
+    leverageSub: $('#t212LeverageSub'),
+    marginRequired: $('#t212MarginRequired'),
+    potentialProfit: $('#t212PotentialProfit'),
+    potentialProfitPct: $('#t212PotentialProfitPct'),
+    potentialLoss: $('#t212PotentialLoss'),
+    potentialLossPct: $('#t212PotentialLossPct'),
+    rewardRisk: $('#t212RewardRisk'),
+    scenarioList: $('#t212ScenarioList'),
+    priceSuffix: $('#t212PriceSuffix'),
+    spreadSuffix: $('#t212SpreadSuffix'),
+    investmentSuffix: $('#t212InvestmentSuffix'),
+    capitalSuffix: $('#t212CapitalSuffix'),
+  };
+
+  function t212Sym() { return t212State.symbols[t212State.currency]; }
+
+  function t212Fmt(n, decimals = 2) {
+    return n.toLocaleString('en-GB', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  }
+
+  function t212FmtCurrency(n, decimals = 2) {
+    return t212Sym() + t212Fmt(n, decimals);
+  }
+
+  window.t212SetDirection = function(dir) {
+    t212State.direction = dir;
+    if (dir === 'long') {
+      t212Els.buyBox.classList.add('active');
+      t212Els.sellBox.classList.remove('active');
+      t212Els.directionBadge.textContent = 'LONG';
+      t212Els.directionBadge.className = 'direction-badge long';
+    } else {
+      t212Els.sellBox.classList.add('active');
+      t212Els.buyBox.classList.remove('active');
+      t212Els.directionBadge.textContent = 'SHORT';
+      t212Els.directionBadge.className = 'direction-badge short';
+    }
+    t212Calculate();
+  };
+
+  // ── Trading 212 Mode Toggle ──
+  $$('#t212ModeToggle .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#t212ModeToggle .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      t212State.mode = btn.dataset.mode;
+
+      const suffix = t212State.mode === 'points' ? 'pts' : t212State.mode === 'percent' ? '%' : t212Sym();
+      t212Els.tpSuffix.textContent = suffix;
+      t212Els.slSuffix.textContent = suffix;
+
+      t212Calculate();
+    });
+  });
+
+  // ── Trading 212 Input Listeners ──
+  [t212Els.price, t212Els.spread, t212Els.investment, t212Els.leverage, t212Els.accountCapital,
+   t212Els.tpInput, t212Els.slInput]
+    .forEach(el => el.addEventListener('input', t212Calculate));
+
+  function t212Calculate() {
+    const price = parseFloat(t212Els.price.value) || 0;
+    const spread = parseFloat(t212Els.spread.value) || 0;
+    const investment = parseFloat(t212Els.investment.value) || 0;
+    const leverage = parseFloat(t212Els.leverage.value) || 1;
+    const accountCapital = parseFloat(t212Els.accountCapital.value) || 0;
+
+    const positionValue = investment * leverage;
+    const marginRequired = positionValue * t212State.marginRate;
+    const effectiveLeverage = accountCapital > 0 ? positionValue / accountCapital : 0;
+
+    // Update Results
+    t212Els.positionValue.innerHTML = t212FmtCurrency(positionValue, 0);
+    t212Els.effectiveLeverage.textContent = t212Fmt(effectiveLeverage, 1) + 'x';
+    t212Els.marginRequired.innerHTML = t212FmtCurrency(marginRequired, 0);
+
+    // ── Take Profit / Stop Loss Calculation ──
+    const tpInputVal = parseFloat(t212Els.tpInput.value) || 0;
+    const slInputVal = parseFloat(t212Els.slInput.value) || 0;
+
+    let tpPrice, tpPoints, tpPercent, tpProfit;
+    let slPrice, slPoints, slPercent, slLoss;
+
+    if (price > 0) {
+      if (t212State.mode === 'points') {
+        tpPoints = tpInputVal;
+        slPoints = slInputVal;
+        tpPrice = t212State.direction === 'long' ? price + tpPoints : price - tpPoints;
+        slPrice = t212State.direction === 'long' ? price - slPoints : price + slPoints;
+        tpPercent = price > 0 ? (tpPoints / price) * 100 : 0;
+        slPercent = price > 0 ? (slPoints / price) * 100 : 0;
+      } else if (t212State.mode === 'percent') {
+        tpPercent = tpInputVal;
+        slPercent = slInputVal;
+        tpPrice = t212State.direction === 'long'
+          ? price * (1 + tpPercent / 100)
+          : price * (1 - tpPercent / 100);
+        slPrice = t212State.direction === 'long'
+          ? price * (1 - slPercent / 100)
+          : price * (1 + slPercent / 100);
+        tpPoints = tpPrice - price;
+        slPoints = price - slPrice;
+      } else {
+        // By Price
+        tpPrice = tpInputVal;
+        slPrice = slInputVal;
+        tpPoints = Math.abs(tpPrice - price);
+        slPoints = Math.abs(price - slPrice);
+        tpPercent = price > 0 ? ((tpPrice - price) / price) * 100 : 0;
+        slPercent = price > 0 ? ((price - slPrice) / price) * 100 : 0;
+      }
+
+      // Profit/Loss in currency
+      const shares = investment / price;
+      tpProfit = shares * Math.abs(tpPrice - price);
+      slLoss = shares * Math.abs(price - slPrice);
+    } else {
+      tpPrice = slPrice = tpPoints = slPoints = tpPercent = slPercent = tpProfit = slLoss = 0;
+    }
+
+    // Update TP/SL displays
+    t212Els.tpTarget.innerHTML = t212Fmt(Math.abs(tpPrice), 2);
+    t212Els.tpTarget.className = 'result-value green';
+    t212Els.tpSub.innerHTML = `${tpPoints >= 0 ? '+' : ''}${t212Fmt(tpPoints, 2)} pts, ${tpPoints >= 0 ? '+' : ''}${t212FmtCurrency(tpProfit, 2)}`;
+
+    t212Els.slTarget.innerHTML = t212Fmt(Math.abs(slPrice), 2);
+    t212Els.slTarget.className = 'result-value red';
+    t212Els.slSub.innerHTML = `-${t212Fmt(slPoints, 2)} pts, -${t212FmtCurrency(slLoss, 2)}`;
+
+    // Potential Profit/Loss
+    t212Els.potentialProfit.innerHTML = t212FmtCurrency(tpProfit, 2);
+    t212Els.potentialProfitPct.textContent = investment > 0 ? `+${t212Fmt((tpProfit / investment) * 100, 1)}% of investment` : '';
+
+    t212Els.potentialLoss.innerHTML = `-${t212FmtCurrency(slLoss, 2)}`;
+    t212Els.potentialLossPct.textContent = investment > 0 ? `-${t212Fmt((slLoss / investment) * 100, 1)}% of investment` : '';
+
+    // Reward / Risk Ratio
+    const rr = slLoss > 0 ? tpProfit / slLoss : 0;
+    t212Els.rewardRisk.textContent = rr > 0 ? t212Fmt(rr, 1) + ' : 1' : '—';
+
+    // ── P&L Scenarios (price-based grid) ──
+    const scenarios = [];
+
+    // Add TP if valid
+    if (Math.abs(tpPrice) > 0 && tpPrice !== price) {
+      scenarios.push({ price: tpPrice, label: 'Target Profit', isPnL: true });
+    }
+
+    // Add some intermediate levels
+    const range = Math.abs(tpPrice - slPrice) || 10;
+    const step = range / 4;
+    for (let i = 1; i <= 3; i++) {
+      const levelPrice = t212State.direction === 'long'
+        ? price + (step * i)
+        : price - (step * i);
+      if (Math.abs(levelPrice - tpPrice) > 0.01 && Math.abs(levelPrice - slPrice) > 0.01) {
+        scenarios.push({ price: levelPrice });
+      }
+    }
+
+    // Add SL if valid
+    if (Math.abs(slPrice) > 0 && slPrice !== price) {
+      scenarios.push({ price: slPrice, label: 'Stop Loss', isPnL: true });
+    }
+
+    scenarios.sort((a, b) => b.price - a.price);
+
+    let html = '';
+    scenarios.forEach(s => {
+      const priceChange = s.price - price;
+      const pctChange = price > 0 ? (priceChange / price) * 100 : 0;
+      const shares = investment / price;
+      const pnl = shares * priceChange;
+      const isPos = pnl >= 0;
+      const labelText = s.label ? ` <span style="font-size:9px;opacity:0.6">${s.label}</span>` : '';
+
+      html += `
+        <div class="scenario-row">
+          <span class="scenario-price">${t212Fmt(s.price, 2)}${labelText}</span>
+          <span class="scenario-points">${priceChange >= 0 ? '+' : ''}${t212Fmt(priceChange, 2)}</span>
+          <span class="scenario-pnl ${isPos ? 'positive' : 'negative'}">${isPos ? '+' : ''}${t212FmtCurrency(pnl, 2)}</span>
+          <span class="scenario-pct">${isPos ? '+' : ''}${t212Fmt(pctChange, 1)}%</span>
+        </div>`;
+    });
+
+    t212Els.scenarioList.innerHTML = html;
+  }
+
+  // ── Platform Tab Switching ──
+  $$('.platform-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const platform = btn.dataset.platform;
+
+      // Hide all tabs
+      $$('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+      // Deactivate all buttons
+      $$('.platform-tab-btn').forEach(b => b.classList.remove('active'));
+
+      // Show selected tab
+      $('#' + platform + '-tab').classList.add('active');
+      btn.classList.add('active');
+    });
+  });
+
+  // ── Initial Calculations ──
+  t212Calculate();
+
+  // ── Register Service Worker (PWA) ──
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+
+</body>
+</html>
