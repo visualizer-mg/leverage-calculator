@@ -113,7 +113,25 @@
       display: block;
     }
 
-    /* ── Two-column layout ── */
+    /* ── New IG Markets Layout ── */
+    #ig-markets-tab .layout-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #ig-markets-tab .top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+
+    #ig-markets-tab .full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* ── Two-column layout (legacy for Trading 212) ── */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -155,6 +173,55 @@
 
     .card-header .icon { font-size: 14px; }
 
+    /* ── Account Capital / Funds Info Row ── */
+    .account-info-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 12px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .account-info-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .account-info-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .account-info-value {
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .account-info-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14px;
+      padding: 6px 8px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .account-info-input:focus {
+      border-color: var(--border-focus);
+    }
+
     /* ── Form elements ── */
     .field { margin-bottom: 12px; }
     .field:last-child { margin-bottom: 0; }
@@ -173,7 +240,8 @@
       align-items: center;
     }
 
-    input[type="number"] {
+    input[type="number"],
+    input[type="text"] {
       width: 100%;
       background: var(--bg-input);
       border: 1px solid var(--border);
@@ -190,7 +258,8 @@
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 
-    input[type="number"]:focus { border-color: var(--border-focus); }
+    input[type="number"]:focus,
+    input[type="text"]:focus { border-color: var(--border-focus); }
 
     .input-suffix {
       position: absolute;
@@ -585,6 +654,10 @@
 
       .container { padding: 12px 12px 24px; }
 
+      #ig-markets-tab .top-row {
+        grid-template-columns: 1fr;
+      }
+
       .main-grid {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -596,7 +669,9 @@
       .card { padding: 14px; }
       .card-header { font-size: 10px; margin-bottom: 12px; }
 
-      input[type="number"] { font-size: 16px; padding: 12px; }
+      input[type="number"],
+      input[type="text"] { font-size: 16px; padding: 12px; }
+
       select { font-size: 16px; padding: 12px; }
 
       .price-box input[type="number"] { font-size: 20px; }
@@ -628,11 +703,10 @@
 
       .hint { font-size: 11px; }
 
-      /* IG Markets: Risk Check nach unten auf Mobile */
-      #ig-markets-tab .main-grid { display: flex; flex-direction: column; }
-      #ig-markets-tab .col-left { order: 1; }
-      #ig-markets-tab .col-right { order: 2; }
-      #riskCheckCard { order: 99; }
+      .account-info-row {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
     }
 
     @media (max-width: 380px) {
@@ -688,23 +762,39 @@
       <strong>Deal</strong> = Sofort kaufen/verkaufen zum aktuellen Marktpreis. Geht nur bei offenem Markt.
     </div>
 
-    <div class="main-grid">
+    <!-- Account Capital / Funds Info Row -->
+    <div class="account-info-row" id="accountInfoRow">
+      <div class="account-info-item">
+        <div class="account-info-label">Funds</div>
+        <input type="number" id="accountCapitalInput" class="account-info-input" value="1000" min="1" step="100">
+      </div>
+      <div class="account-info-item">
+        <div class="account-info-label">Margin</div>
+        <div class="account-info-value" id="accountInfoMargin">£250</div>
+      </div>
+      <div class="account-info-item">
+        <div class="account-info-label">Available</div>
+        <div class="account-info-value" id="accountInfoAvailable">£750</div>
+      </div>
+    </div>
 
-      <!-- ═══ LEFT COLUMN: Trade Setup ═══ -->
-      <div class="col-left">
+    <div class="layout-wrapper">
+
+      <!-- Top Row: Trade Setup (left) | Limit/Stop Calculator (right) -->
+      <div class="top-row">
+
+        <!-- Trade Setup Card -->
         <div class="card">
           <div class="card-header">
             <span class="icon">&#9881;</span> Trade Setup
             <span class="direction-badge long" id="directionBadge">LONG</span>
           </div>
 
+          <!-- Asset Name (NEW) -->
           <div class="field">
-            <label>Account Capital</label>
-            <div class="input-wrapper">
-              <input type="number" id="capital" value="1000" min="1" step="100">
-              <span class="input-suffix" id="capitalSuffix">&pound;</span>
-            </div>
-            <div class="hint">Your total IG account balance</div>
+            <label>Asset Name</label>
+            <input type="text" id="igAssetName" value="Germany 40" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 10px 12px; outline: none;">
+            <div class="hint">For reference (e.g., DAX, GER40)</div>
           </div>
 
           <!-- SELL / BUY Price -->
@@ -728,22 +818,35 @@
           <div class="order-fields" id="orderFields">
             <div class="row">
               <div class="field">
-                <label>Price Level</label>
-                <div class="input-wrapper">
-                  <input type="number" id="priceLevel" value="22000" min="0" step="1">
-                  <span class="input-suffix">pts</span>
+                <label>Price Level Mode</label>
+                <div class="mode-toggle" id="priceLevelModeToggle">
+                  <button class="mode-btn active" data-mode="manual">Manual</button>
+                  <button class="mode-btn" data-mode="percent">By %</button>
+                  <button class="mode-btn" data-mode="points">By Points</button>
                 </div>
-                <div class="hint">Your desired entry price. Trade opens when market hits this level.</div>
               </div>
-              <div class="field">
-                <label>Expiry</label>
-                <select id="expiry">
-                  <option value="gtc">Good till cancelled</option>
-                  <option value="today">End of day</option>
-                  <option value="week">End of week</option>
-                </select>
-                <div class="hint">How long the order stays active if not triggered.</div>
+            </div>
+
+            <div class="field">
+              <label>Price Level</label>
+              <div class="input-wrapper">
+                <input type="number" id="priceLevel" value="22000" min="0" step="1">
+                <span class="input-suffix" id="priceLevelSuffix">pts</span>
               </div>
+              <div class="hint" id="priceLevelHint">Your desired entry price. Trade opens when market hits this level.</div>
+              <div id="priceLevelCalculated" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: none;">
+                Calculated: <span id="priceLevelCalculatedValue"></span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Expiry</label>
+              <select id="expiry">
+                <option value="gtc">Good till cancelled</option>
+                <option value="today">End of day</option>
+                <option value="week">End of week</option>
+              </select>
+              <div class="hint">How long the order stays active if not triggered.</div>
             </div>
           </div>
 
@@ -770,76 +873,27 @@
             </div>
             <div class="hint">The value you enter in IG's "Size" field.</div>
           </div>
-        </div>
 
-        <!-- Risk Management Card -->
-        <div class="card" id="riskCheckCard">
-          <div class="card-header">
-            <span class="icon">&#9888;</span> Risk Check
-          </div>
-
-          <div class="result-grid">
-            <div class="result-item">
-              <div class="result-label">Free Buffer</div>
-              <div class="result-value green" id="resultBuffer">&pound;750</div>
-              <div class="result-sub" id="resultBufferPct">75% of capital</div>
-              <div class="buffer-bar-track">
-                <div class="buffer-bar-fill" id="bufferBar" style="width:75%; background: var(--accent-green);"></div>
+          <!-- Holding Costs (moved from separate card) -->
+          <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+          <div style="margin-top: 16px;">
+            <div class="field">
+              <label>Holding Period</label>
+              <div class="input-wrapper">
+                <input type="number" id="holdDays" value="5" min="1" step="1">
+                <span class="input-suffix">days</span>
               </div>
+              <div class="hint">How many days you plan to keep the trade open</div>
             </div>
-            <div class="result-item">
-              <div class="result-label">Margin Call at</div>
-              <div class="result-value red" id="resultMarginCall">3,750 pts</div>
-              <div class="result-sub" id="resultMarginCallPrice">DAX ~ 18,350</div>
-            </div>
-            <div class="result-item">
-              <div class="result-label">Stop Loss Risk</div>
-              <div class="result-value" id="resultStopRisk" style="color: var(--text-secondary);">&pound;40</div>
-              <div class="result-sub" id="resultStopRiskPct">4.0% of capital</div>
-            </div>
-            <div class="result-item">
-              <div class="result-label">Reward / Risk</div>
-              <div class="result-value blue" id="resultRR">2.0 : 1</div>
-              <div class="result-sub" id="resultRRsub">Limit &divide; Stop</div>
-            </div>
-          </div>
-
-          <div class="risk-banner" id="riskBanner">
-            <strong id="riskBannerTitle">Warning</strong>
-            <span id="riskBannerText"></span>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- ═══ RIGHT COLUMN: Results, P&L, Holding Costs ═══ -->
-      <div class="col-right">
-
-        <!-- Results Card -->
-        <div class="card">
-          <div class="card-header">
-            <span class="icon">&#9889;</span> Results
-          </div>
-          <div class="result-grid">
-            <div class="result-item">
-              <div class="result-label">Size</div>
-              <div class="result-value blue" id="resultSize">0.20</div>
-              <div class="result-sub" id="resultSizeUnit">&pound;/point</div>
-            </div>
-            <div class="result-item">
-              <div class="result-label">Effective Leverage</div>
-              <div class="result-value purple" id="resultLeverage">5.0x</div>
-              <div class="result-sub" id="resultExposure">Exposure: &pound;5,000</div>
-            </div>
-            <div class="result-item">
-              <div class="result-label">Margin Required</div>
-              <div class="result-value orange" id="resultMargin">&pound;250</div>
-              <div class="result-sub">5% of exposure</div>
-            </div>
-            <div class="result-item">
-              <div class="result-label">Daily Financing</div>
-              <div class="result-value" id="resultFinancing" style="color: var(--text-secondary);">&pound;0.75</div>
-              <div class="result-sub">~5.5% p.a.</div>
+            <div class="result-grid" style="margin-top: 12px;">
+              <div class="result-item">
+                <div class="result-label">Total Financing</div>
+                <div class="result-value orange" id="resultTotalFinancing">&pound;3.75</div>
+              </div>
+              <div class="result-item">
+                <div class="result-label">Cost as % of Capital</div>
+                <div class="result-value" id="resultFinancingPct" style="color: var(--text-secondary);">0.38%</div>
+              </div>
             </div>
           </div>
         </div>
@@ -873,7 +927,7 @@
           </div>
 
           <!-- Stop Loss Section -->
-          <div>
+          <div style="margin-bottom: 16px;">
             <label style="margin-bottom: 8px;">Stop Loss</label>
             <div class="field">
               <div class="input-wrapper">
@@ -887,42 +941,83 @@
               <div class="result-sub" id="igSLSub">-200 pts, -£45.45</div>
             </div>
           </div>
-        </div>
 
-        <!-- P&L Scenarios Card -->
-        <div class="card">
-          <div class="card-header">
-            <span class="icon">&#128200;</span> P&amp;L Scenarios
-          </div>
-          <div id="scenarioList" style="margin-top: 0;"></div>
-        </div>
-
-        <!-- Financing Card -->
-        <div class="card">
-          <div class="card-header">
-            <span class="icon">&#128176;</span> Holding Costs
-          </div>
-          <div class="field">
-            <label>Holding Period</label>
-            <div class="input-wrapper">
-              <input type="number" id="holdDays" value="5" min="1" step="1">
-              <span class="input-suffix">days</span>
-            </div>
-            <div class="hint">How many days you plan to keep the trade open</div>
-          </div>
-          <div class="result-grid" style="margin-top: 12px;">
-            <div class="result-item">
-              <div class="result-label">Total Financing</div>
-              <div class="result-value orange" id="resultTotalFinancing">&pound;3.75</div>
-            </div>
-            <div class="result-item">
-              <div class="result-label">Cost as % of Capital</div>
-              <div class="result-value" id="resultFinancingPct" style="color: var(--text-secondary);">0.38%</div>
-            </div>
+          <!-- P&L Scenarios (moved into this card) -->
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 12px;">P&amp;L Scenarios</div>
+            <div id="scenarioList" style="margin-top: 0;"></div>
           </div>
         </div>
 
       </div>
+
+      <!-- Full-width Results Card -->
+      <div class="card">
+        <div class="card-header">
+          <span class="icon">&#9889;</span> Results
+        </div>
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">Size</div>
+            <div class="result-value blue" id="resultSize">0.20</div>
+            <div class="result-sub" id="resultSizeUnit">&pound;/point</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Effective Leverage</div>
+            <div class="result-value purple" id="resultLeverage">5.0x</div>
+            <div class="result-sub" id="resultExposure">Exposure: &pound;5,000</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Margin Required</div>
+            <div class="result-value orange" id="resultMargin">&pound;250</div>
+            <div class="result-sub">5% of exposure</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Daily Financing</div>
+            <div class="result-value" id="resultFinancing" style="color: var(--text-secondary);">&pound;0.75</div>
+            <div class="result-sub">~5.5% p.a.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full-width Risk Check Card -->
+      <div class="card" id="riskCheckCard">
+        <div class="card-header">
+          <span class="icon">&#9888;</span> Risk Check
+        </div>
+
+        <div class="result-grid">
+          <div class="result-item">
+            <div class="result-label">Free Buffer</div>
+            <div class="result-value green" id="resultBuffer">&pound;750</div>
+            <div class="result-sub" id="resultBufferPct">75% of capital</div>
+            <div class="buffer-bar-track">
+              <div class="buffer-bar-fill" id="bufferBar" style="width:75%; background: var(--accent-green);"></div>
+            </div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Margin Call at</div>
+            <div class="result-value red" id="resultMarginCall">3,750 pts</div>
+            <div class="result-sub" id="resultMarginCallPrice">DAX ~ 18,350</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Stop Loss Risk</div>
+            <div class="result-value" id="resultStopRisk" style="color: var(--text-secondary);">&pound;40</div>
+            <div class="result-sub" id="resultStopRiskPct">4.0% of capital</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Reward / Risk</div>
+            <div class="result-value blue" id="resultRR">2.0 : 1</div>
+            <div class="result-sub" id="resultRRsub">Limit &divide; Stop</div>
+          </div>
+        </div>
+
+        <div class="risk-banner" id="riskBanner">
+          <strong id="riskBannerTitle">Warning</strong>
+          <span id="riskBannerText"></span>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -932,9 +1027,8 @@
 
     <div class="main-grid">
 
-      <!-- ═══ LEFT COLUMN ═══ -->
-      <div class="col-left">
-
+      <!-- ═══ TOP ROW ═══ -->
+      <div style="grid-column: 1; grid-row: 1;">
         <!-- Asset Setup Card -->
         <div class="card">
           <div class="card-header">
@@ -1005,8 +1099,10 @@
             <div class="hint">Your total Trading 212 account balance</div>
           </div>
         </div>
+      </div>
 
-        <!-- Limit/Stop Calculator Card -->
+      <!-- Limit/Stop Calculator Card -->
+      <div style="grid-column: 2; grid-row: 1;">
         <div class="card">
           <div class="card-header">
             <span class="icon">&#128204;</span> Limit / Stop Calculator
@@ -1035,7 +1131,7 @@
           </div>
 
           <!-- Stop Loss Section -->
-          <div>
+          <div style="margin-bottom: 16px;">
             <label style="margin-bottom: 8px;">Stop Loss</label>
             <div class="field">
               <div class="input-wrapper">
@@ -1049,14 +1145,17 @@
               <div class="result-sub" id="t212SLSub">-2.00 pts, -£300.00</div>
             </div>
           </div>
-        </div>
 
+          <!-- P&L Scenarios (moved into this card) -->
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 12px;">P&amp;L Scenarios</div>
+            <div id="t212ScenarioList" style="margin-top: 0;"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- ═══ RIGHT COLUMN ═══ -->
-      <div class="col-right">
-
-        <!-- Results Card -->
+      <!-- Results Card (full width below) -->
+      <div style="grid-column: 1 / -1; grid-row: 2;">
         <div class="card">
           <div class="card-header">
             <span class="icon">&#9889;</span> Results
@@ -1094,15 +1193,6 @@
             </div>
           </div>
         </div>
-
-        <!-- P&L Scenarios Card -->
-        <div class="card">
-          <div class="card-header">
-            <span class="icon">&#128200;</span> P&amp;L Scenarios
-          </div>
-          <div id="t212ScenarioList" style="margin-top: 0;"></div>
-        </div>
-
       </div>
 
     </div>
@@ -1120,6 +1210,7 @@
     tradeType: 'deal', // 'deal' or 'order'
     mode: 'leverage-to-size',
     stopLimitMode: 'points', // 'points', 'percent', 'price'
+    priceLevelMode: 'manual', // 'manual', 'percent', 'points'
     symbols: { GBP: '\u00A3', EUR: '\u20AC', USD: '$' },
     annualRate: 0.055,
     marginRate: 0.05,
@@ -1130,7 +1221,8 @@
   const $$ = (sel) => document.querySelectorAll(sel);
 
   const els = {
-    capital: $('#capital'),
+    capital: $('#accountCapitalInput'),
+    igAssetName: $('#igAssetName'),
     sellPrice: $('#sellPrice'),
     buyPrice: $('#buyPrice'),
     leverage: $('#leverage'),
@@ -1145,6 +1237,10 @@
     igSLSuffix: $('#igSLSuffix'),
     holdDays: $('#holdDays'),
     priceLevel: $('#priceLevel'),
+    priceLevelSuffix: $('#priceLevelSuffix'),
+    priceLevelHint: $('#priceLevelHint'),
+    priceLevelCalculated: $('#priceLevelCalculated'),
+    priceLevelCalculatedValue: $('#priceLevelCalculatedValue'),
     expiry: $('#expiry'),
     orderFields: $('#orderFields'),
     tradeTypeHint: $('#tradeTypeHint'),
@@ -1161,8 +1257,8 @@
     resultTotalFinancing: $('#resultTotalFinancing'),
     resultFinancingPct: $('#resultFinancingPct'),
     scenarioList: $('#scenarioList'),
-    capitalSuffix: $('#capitalSuffix'),
-    sizeSuffix: $('#sizeSuffix'),
+    accountInfoMargin: $('#accountInfoMargin'),
+    accountInfoAvailable: $('#accountInfoAvailable'),
     // risk
     resultBuffer: $('#resultBuffer'),
     resultBufferPct: $('#resultBufferPct'),
@@ -1208,6 +1304,37 @@
       } else {
         els.orderFields.classList.remove('visible');
         els.tradeTypeHint.innerHTML = '<strong>Deal</strong> = Sofort kaufen/verkaufen zum aktuellen Marktpreis. Geht nur bei offenem Markt.';
+      }
+      calculate();
+    });
+  });
+
+  // ── Price Level Mode Toggle ──
+  $$('#priceLevelModeToggle .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#priceLevelModeToggle .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.priceLevelMode = btn.dataset.mode;
+
+      if (state.priceLevelMode === 'manual') {
+        els.priceLevelSuffix.textContent = 'pts';
+        els.priceLevelHint.textContent = 'Your desired entry price. Trade opens when market hits this level.';
+        els.priceLevelCalculated.style.display = 'none';
+        els.priceLevel.value = '22000';
+        els.priceLevel.step = '1';
+      } else if (state.priceLevelMode === 'percent') {
+        els.priceLevelSuffix.textContent = '%';
+        els.priceLevelHint.textContent = 'Enter percentage offset from current price.';
+        els.priceLevelCalculated.style.display = 'block';
+        els.priceLevel.value = '1';
+        els.priceLevel.step = '0.01';
+      } else {
+        // points
+        els.priceLevelSuffix.textContent = 'pts';
+        els.priceLevelHint.textContent = 'Enter points offset from current price.';
+        els.priceLevelCalculated.style.display = 'block';
+        els.priceLevel.value = '100';
+        els.priceLevel.step = '1';
       }
       calculate();
     });
@@ -1302,8 +1429,7 @@
   }
 
   function updateSuffixes() {
-    els.capitalSuffix.innerHTML = sym();
-    els.sizeSuffix.innerHTML = sym() + '/pt';
+    // Capital input doesn't have suffix in new layout
     // Update price-mode suffixes if active
     if (state.stopLimitMode === 'price') {
       els.igTPSuffix.textContent = sym();
@@ -1320,7 +1446,24 @@
     // Use entry price based on direction & trade type
     let price;
     if (state.tradeType === 'order') {
-      price = parseFloat(els.priceLevel.value) || 0;
+      if (state.priceLevelMode === 'manual') {
+        price = parseFloat(els.priceLevel.value) || 0;
+      } else if (state.priceLevelMode === 'percent') {
+        const pct = parseFloat(els.priceLevel.value) || 0;
+        const basePrice = state.direction === 'long' ? buyPrice : sellPrice;
+        price = state.direction === 'long'
+          ? basePrice * (1 + pct / 100)
+          : basePrice * (1 - pct / 100);
+        els.priceLevelCalculatedValue.textContent = fmt(price, 1) + ' pts';
+      } else {
+        // points
+        const points = parseFloat(els.priceLevel.value) || 0;
+        const basePrice = state.direction === 'long' ? buyPrice : sellPrice;
+        price = state.direction === 'long'
+          ? basePrice + points
+          : basePrice - points;
+        els.priceLevelCalculatedValue.textContent = fmt(price, 1) + ' pts';
+      }
     } else {
       price = state.direction === 'long' ? buyPrice : sellPrice;
     }
@@ -1366,6 +1509,11 @@
     const dailyFinancing = exposure * (state.annualRate / 365);
     const totalFinancing = dailyFinancing * holdDays;
     const financingPct = capital > 0 ? (totalFinancing / capital) * 100 : 0;
+
+    // ── Update Account Info Row ──
+    const available = Math.max(capital - margin, 0);
+    els.accountInfoMargin.innerHTML = fmtCurrency(margin, 0);
+    els.accountInfoAvailable.innerHTML = fmtCurrency(available, 0);
 
     // ── Update results ──
     els.resultSize.textContent = fmt(size, size < 1 ? 4 : 2);
