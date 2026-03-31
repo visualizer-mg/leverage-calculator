@@ -834,8 +834,8 @@
                 <span class="input-suffix" id="priceLevelSuffix">pts</span>
               </div>
               <div class="hint" id="priceLevelHint">Your desired entry price. Trade opens when market hits this level.</div>
-              <div id="priceLevelCalculated" style="font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: none;">
-                Calculated: <span id="priceLevelCalculatedValue"></span>
+              <div id="priceLevelCalculated" style="margin-top: 8px; display: none;">
+                <span style="font-size: 11px; color: var(--text-secondary);">Calculated:</span> <span id="priceLevelCalculatedValue" style="font-size: 16px; font-weight: 700; color: #22d3ee; font-family: var(--font-mono);"></span>
               </div>
             </div>
 
@@ -872,6 +872,15 @@
               <span class="input-suffix" id="sizeSuffix">&pound;/pt</span>
             </div>
             <div class="hint">The value you enter in IG's "Size" field.</div>
+          </div>
+
+          <div class="field">
+            <label>Margin Factor</label>
+            <div class="input-wrapper">
+              <input type="number" id="marginFactor" value="5" min="1" max="50" step="1">
+              <span class="input-suffix">%</span>
+            </div>
+            <div class="hint">Per-asset margin rate from IG Info tab. Indices ~5%, Oil ~10%, Crypto ~50%. Determines how much capital is blocked per trade.</div>
           </div>
 
           <!-- Holding Costs (moved from separate card) -->
@@ -970,7 +979,7 @@
           <div class="result-item">
             <div class="result-label">Margin Required</div>
             <div class="result-value orange" id="resultMargin">&pound;250</div>
-            <div class="result-sub">5% of exposure</div>
+            <div class="result-sub" id="resultMarginSub">5% of exposure</div>
           </div>
           <div class="result-item">
             <div class="result-label">Daily Financing</div>
@@ -1236,6 +1245,7 @@
     igTPSuffix: $('#igTPSuffix'),
     igSLSuffix: $('#igSLSuffix'),
     holdDays: $('#holdDays'),
+    marginFactor: $('#marginFactor'),
     priceLevel: $('#priceLevel'),
     priceLevelSuffix: $('#priceLevelSuffix'),
     priceLevelHint: $('#priceLevelHint'),
@@ -1411,7 +1421,7 @@
 
   // ── Input listeners ──
   [els.capital, els.sellPrice, els.buyPrice, els.priceLevel, els.leverage, els.sizeManual,
-   els.igTPInput, els.igSLInput, els.holdDays]
+   els.igTPInput, els.igSLInput, els.holdDays, els.marginFactor]
     .forEach(el => el.addEventListener('input', calculate));
 
   // ── Helpers ──
@@ -1505,7 +1515,8 @@
     }
 
     const exposure = price * size;
-    const margin = exposure * state.marginRate;
+    const marginRate = (parseFloat(els.marginFactor.value) || 5) / 100;
+    const margin = exposure * marginRate;
     const dailyFinancing = exposure * (state.annualRate / 365);
     const totalFinancing = dailyFinancing * holdDays;
     const financingPct = capital > 0 ? (totalFinancing / capital) * 100 : 0;
@@ -1521,6 +1532,7 @@
     els.resultLeverage.textContent = fmt(leverage, 1) + 'x';
     els.resultExposure.innerHTML = 'Exposure: ' + fmtCurrency(exposure, 0);
     els.resultMargin.innerHTML = fmtCurrency(margin, 0);
+    $('#resultMarginSub').textContent = (marginRate * 100).toFixed(0) + '% of exposure';
     els.resultFinancing.innerHTML = fmtCurrency(dailyFinancing, 2);
     els.resultTotalFinancing.innerHTML = fmtCurrency(totalFinancing, 2);
     els.resultFinancingPct.textContent = fmt(financingPct, 2) + '%';
