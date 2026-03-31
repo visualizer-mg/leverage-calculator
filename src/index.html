@@ -737,6 +737,14 @@
 
 <div class="container">
 
+  <!-- Language Toggle -->
+  <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+    <div id="langToggle" style="display: inline-flex; gap: 2px; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; padding: 2px; font-size: 12px;">
+      <button class="lang-btn active" data-lang="en" style="background: var(--accent-blue); color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 12px;">EN</button>
+      <button class="lang-btn" data-lang="de" style="background: transparent; color: var(--text-secondary); border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 12px;">DE</button>
+    </div>
+  </div>
+
   <!-- Platform Tab Bar -->
   <div class="platform-tabs" id="platformTabs">
     <button class="platform-tab-btn active" data-platform="ig-markets">IG Markets</button>
@@ -790,11 +798,21 @@
             <span class="direction-badge long" id="directionBadge">LONG</span>
           </div>
 
-          <!-- Asset Name (NEW) -->
-          <div class="field">
-            <label>Asset Name</label>
-            <input type="text" id="igAssetName" value="Germany 40" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 10px 12px; outline: none;">
-            <div class="hint">For reference (e.g., DAX, GER40)</div>
+          <!-- Asset Name + Margin Factor Row -->
+          <div class="row" style="display: flex; gap: 10px;">
+            <div class="field" style="flex: 2;">
+              <label id="lbl_assetName">Asset Name</label>
+              <input type="text" id="igAssetName" value="Germany 40" style="width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 10px 12px; outline: none;">
+              <div class="hint" id="hint_assetName">e.g., DAX, Oil, AAPL</div>
+            </div>
+            <div class="field" style="flex: 1;">
+              <label id="lbl_marginFactor">Margin Factor</label>
+              <div class="input-wrapper">
+                <input type="number" id="marginFactor" value="5" min="1" max="50" step="1">
+                <span class="input-suffix">%</span>
+              </div>
+              <div class="hint" id="hint_marginFactor">From IG Info tab</div>
+            </div>
           </div>
 
           <!-- SELL / BUY Price -->
@@ -811,7 +829,7 @@
               </div>
             </div>
             <div class="spread-info">Spread: <span id="spreadValue">7.0</span> pts</div>
-            <div class="hint">Click SELL for Short, BUY for Long. Use the price from IG.</div>
+            <div class="hint" id="hintSellBuy">Click SELL for Short, BUY for Long. Use the price from IG.</div>
           </div>
 
           <!-- Order-specific: Price Level & Expiry -->
@@ -823,6 +841,9 @@
                   <button class="mode-btn active" data-mode="manual">Manual</button>
                   <button class="mode-btn" data-mode="percent">By %</button>
                   <button class="mode-btn" data-mode="points">By Points</button>
+                </div>
+                <div class="trade-type-hint" id="priceLevelModeHint" style="margin-top: 8px;">
+                  <strong>Manual</strong> = Enter your desired entry price directly.
                 </div>
               </div>
             </div>
@@ -846,7 +867,7 @@
                 <option value="today">End of day</option>
                 <option value="week">End of week</option>
               </select>
-              <div class="hint">How long the order stays active if not triggered.</div>
+              <div class="hint" id="hintExpiry">How long the order stays active if not triggered.</div>
             </div>
           </div>
 
@@ -862,7 +883,7 @@
               <input type="number" id="leverage" value="5" min="0.1" step="0.5">
               <span class="input-suffix">x</span>
             </div>
-            <div class="hint">Multiplier for your capital. 5x = 5x gains &amp; losses.</div>
+            <div class="hint" id="hintLeverage">Multiplier for your capital. 5x = 5x gains &amp; losses.</div>
           </div>
 
           <div id="sizeInput" class="field" style="display:none;">
@@ -871,16 +892,7 @@
               <input type="number" id="sizeManual" value="0.20" min="0.01" step="0.01">
               <span class="input-suffix" id="sizeSuffix">&pound;/pt</span>
             </div>
-            <div class="hint">The value you enter in IG's "Size" field.</div>
-          </div>
-
-          <div class="field">
-            <label>Margin Factor</label>
-            <div class="input-wrapper">
-              <input type="number" id="marginFactor" value="5" min="1" max="50" step="1">
-              <span class="input-suffix">%</span>
-            </div>
-            <div class="hint">Per-asset margin rate from IG Info tab. Indices ~5%, Oil ~10%, Crypto ~50%. Determines how much capital is blocked per trade.</div>
+            <div class="hint" id="hintSize">The value you enter in IG's "Size" field.</div>
           </div>
 
           <!-- Holding Costs (moved from separate card) -->
@@ -892,7 +904,7 @@
                 <input type="number" id="holdDays" value="5" min="1" step="1">
                 <span class="input-suffix">days</span>
               </div>
-              <div class="hint">How many days you plan to keep the trade open</div>
+              <div class="hint" id="hintHolding">How many days you plan to keep the trade open</div>
             </div>
             <div class="result-grid" style="margin-top: 12px;">
               <div class="result-item">
@@ -1326,24 +1338,28 @@
       btn.classList.add('active');
       state.priceLevelMode = btn.dataset.mode;
 
+      const plmHint = $('#priceLevelModeHint');
       if (state.priceLevelMode === 'manual') {
         els.priceLevelSuffix.textContent = 'pts';
         els.priceLevelHint.textContent = 'Your desired entry price. Trade opens when market hits this level.';
         els.priceLevelCalculated.style.display = 'none';
         els.priceLevel.value = '22000';
         els.priceLevel.step = '1';
+        plmHint.innerHTML = '<strong>Manual</strong> = Enter your desired entry price directly.';
       } else if (state.priceLevelMode === 'percent') {
         els.priceLevelSuffix.textContent = '%';
         els.priceLevelHint.textContent = 'Enter percentage offset from current price.';
         els.priceLevelCalculated.style.display = 'block';
         els.priceLevel.value = '1';
         els.priceLevel.step = '0.01';
+        plmHint.innerHTML = '<strong>By %</strong> = Enter a % and the app calculates the price level. E.g. 3% on a Long = current price × 1.03.';
       } else {
         // points
         els.priceLevelSuffix.textContent = 'pts';
         els.priceLevelHint.textContent = 'Enter points offset from current price.';
         els.priceLevelCalculated.style.display = 'block';
         els.priceLevel.value = '100';
+        plmHint.innerHTML = '<strong>By Points</strong> = Enter a point distance and the app calculates the price level. E.g. +500 pts on a Long = current price + 500.';
         els.priceLevel.step = '1';
       }
       calculate();
@@ -1926,6 +1942,270 @@
 
   // ── Initial Calculations ──
   t212Calculate();
+
+  // ═══ LANGUAGE SYSTEM ═══
+  const translations = {
+    en: {
+      // IG Markets - Trade Setup
+      tradeSetup: 'Trade Setup',
+      assetName: 'Asset Name',
+      hintAssetName: 'e.g., DAX, Oil, AAPL',
+      marginFactor: 'Margin Factor',
+      hintMarginFactor: 'From IG Info tab',
+      indexPrice: 'Index / Asset Price',
+      spreadLabel: 'Spread:',
+      hintSellBuy: 'Click SELL for Short, BUY for Long. Use the price from IG.',
+      priceLevelMode: 'Price Level Mode',
+      priceLevel: 'Price Level',
+      expiry: 'Expiry',
+      hintExpiry: 'How long the order stays active if not triggered.',
+      leverageToSize: 'Leverage → Size',
+      sizeToLeverage: 'Size → Leverage',
+      desiredLeverage: 'Desired Leverage',
+      hintLeverage: 'Multiplier for your capital. 5x = 5x gains & losses.',
+      sizePerPoint: 'Size (per point)',
+      hintSize: 'The value you enter in IG\'s "Size" field.',
+      holdingPeriod: 'Holding Period',
+      hintHolding: 'How many days you plan to keep the trade open',
+      totalFinancing: 'Total Financing',
+      costPctCapital: 'Cost as % of Capital',
+      // Info Row
+      funds: 'Funds',
+      margin: 'Margin',
+      available: 'Available',
+      // Deal/Order
+      dealExplain: '<strong>Deal</strong> = Buy/sell immediately at current market price. Only when market is open.',
+      orderExplain: '<strong>Order</strong> = Trade opens when market hits your <em>Price Level</em>. Stays active until expiry or cancellation.',
+      // Price Level Mode Hints
+      plmManual: '<strong>Manual</strong> = Enter your desired entry price directly.',
+      plmPercent: '<strong>By %</strong> = Enter a % and the app calculates the price level. E.g. 3% on a Long = current price × 1.03.',
+      plmPoints: '<strong>By Points</strong> = Enter a point distance and the app calculates the price level. E.g. +500 pts on a Long = current price + 500.',
+      // Limit/Stop Calculator
+      limitStopCalc: 'Limit / Stop Calculator',
+      takeProfit: 'Take Profit',
+      stopLoss: 'Stop Loss',
+      target: 'Target',
+      pnlScenarios: 'P&L Scenarios',
+      // Results
+      results: 'Results',
+      size: 'Size',
+      effectiveLeverage: 'Effective Leverage',
+      marginRequired: 'Margin Required',
+      dailyFinancing: 'Daily Financing',
+      // Risk Check
+      riskCheck: 'Risk Check',
+      freeBuffer: 'Free Buffer',
+      marginCallAt: 'Margin Call at',
+      stopLossRisk: 'Stop Loss Risk',
+      rewardRisk: 'Reward / Risk',
+      // T212
+      assetSetup: 'Asset Setup',
+      currentPrice: 'Current Price',
+      direction: 'Direction',
+      spread: 'Spread',
+      investmentValue: 'Investment Value',
+      leverage: 'Leverage',
+      accountCapital: 'Account Capital',
+      positionValue: 'Position Value',
+      potentialProfit: 'Potential Profit',
+      potentialLoss: 'Potential Loss',
+    },
+    de: {
+      tradeSetup: 'Trade Setup',
+      assetName: 'Asset Name',
+      hintAssetName: 'z.B. DAX, Öl, AAPL',
+      marginFactor: 'Margin Faktor',
+      hintMarginFactor: 'Aus IG Info-Tab',
+      indexPrice: 'Index / Asset Preis',
+      spreadLabel: 'Spread:',
+      hintSellBuy: 'Klick SELL für Short, BUY für Long. Preis von IG übernehmen.',
+      priceLevelMode: 'Preislevel Modus',
+      priceLevel: 'Preislevel',
+      expiry: 'Ablauf',
+      hintExpiry: 'Wie lange die Order aktiv bleibt wenn nicht ausgelöst.',
+      leverageToSize: 'Hebel → Size',
+      sizeToLeverage: 'Size → Hebel',
+      desiredLeverage: 'Gewünschter Hebel',
+      hintLeverage: 'Multiplikator für dein Kapital. 5x = 5x Gewinne & Verluste.',
+      sizePerPoint: 'Size (pro Punkt)',
+      hintSize: 'Der Wert den du bei IG im "Size" Feld eingibst.',
+      holdingPeriod: 'Haltedauer',
+      hintHolding: 'Wie viele Tage du den Trade offen halten willst',
+      totalFinancing: 'Finanzierungskosten',
+      costPctCapital: 'Kosten in % vom Kapital',
+      funds: 'Kapital',
+      margin: 'Margin',
+      available: 'Verfügbar',
+      dealExplain: '<strong>Deal</strong> = Sofort kaufen/verkaufen zum aktuellen Marktpreis. Geht nur bei offenem Markt.',
+      orderExplain: '<strong>Order</strong> = Trade wird erst eröffnet, wenn der Markt dein <em>Preislevel</em> erreicht. Bleibt aktiv bis Ablauf oder Stornierung.',
+      plmManual: '<strong>Manuell</strong> = Gewünschten Einstiegspreis direkt eingeben.',
+      plmPercent: '<strong>Nach %</strong> = Gib einen Prozentwert ein und die App berechnet das Preislevel. Z.B. 3% Long = aktueller Preis × 1,03.',
+      plmPoints: '<strong>Nach Punkten</strong> = Gib eine Punktdistanz ein und die App berechnet das Preislevel. Z.B. +500 Pkt Long = aktueller Preis + 500.',
+      limitStopCalc: 'Limit / Stop Rechner',
+      takeProfit: 'Gewinnziel',
+      stopLoss: 'Verlustgrenze',
+      target: 'Zielkurs',
+      pnlScenarios: 'Gewinn/Verlust Szenarien',
+      results: 'Ergebnisse',
+      size: 'Size',
+      effectiveLeverage: 'Effektiver Hebel',
+      marginRequired: 'Margin Bedarf',
+      dailyFinancing: 'Tägliche Finanzierung',
+      riskCheck: 'Risiko Check',
+      freeBuffer: 'Freier Puffer',
+      marginCallAt: 'Margin Call bei',
+      stopLossRisk: 'Stop Loss Risiko',
+      rewardRisk: 'Chance / Risiko',
+      assetSetup: 'Asset Setup',
+      currentPrice: 'Aktueller Preis',
+      direction: 'Richtung',
+      spread: 'Spread',
+      investmentValue: 'Investitionswert',
+      leverage: 'Hebel',
+      accountCapital: 'Kontokapital',
+      positionValue: 'Positionswert',
+      potentialProfit: 'Möglicher Gewinn',
+      potentialLoss: 'Möglicher Verlust',
+    }
+  };
+
+  let currentLang = 'en';
+
+  function applyLanguage(lang) {
+    currentLang = lang;
+    const t = translations[lang];
+
+    // Update all lang-btn styles
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      if (b.dataset.lang === lang) {
+        b.style.background = 'var(--accent-blue)';
+        b.style.color = '#fff';
+      } else {
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-secondary)';
+      }
+    });
+
+    // IG Markets labels
+    const map = {
+      'lbl_assetName': t.assetName,
+      'lbl_marginFactor': t.marginFactor,
+      'hint_assetName': t.hintAssetName,
+      'hint_marginFactor': t.hintMarginFactor,
+    };
+
+    for (const [id, text] of Object.entries(map)) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+
+    // Card headers (by matching icon + text)
+    document.querySelectorAll('.card-header').forEach(h => {
+      const text = h.textContent.trim();
+      if (text.includes('Trade Setup')) h.innerHTML = h.innerHTML.replace(/Trade Setup/, t.tradeSetup);
+      if (text.includes('Limit / Stop')) h.innerHTML = h.innerHTML.replace(/Limit \/ Stop Calculator|Limit \/ Stop Rechner/, t.limitStopCalc);
+      if (text.includes('Results') || text.includes('Ergebnisse')) h.innerHTML = h.innerHTML.replace(/Results|Ergebnisse/, t.results);
+      if (text.includes('Risk Check') || text.includes('Risiko Check')) h.innerHTML = h.innerHTML.replace(/Risk Check|Risiko Check/, t.riskCheck);
+      if (text.includes('P&L') || text.includes('Gewinn')) h.innerHTML = h.innerHTML.replace(/P&amp;L Scenarios|Gewinn\/Verlust Szenarien/, t.pnlScenarios);
+      if (text.includes('Asset Setup')) h.innerHTML = h.innerHTML.replace(/Asset Setup/, t.assetSetup);
+    });
+
+    // Result labels
+    document.querySelectorAll('.result-label').forEach(el => {
+      const text = el.textContent.trim();
+      const labelMap = {
+        'Size': t.size, 'Effective Leverage': t.effectiveLeverage, 'Effektiver Hebel': t.effectiveLeverage,
+        'Margin Required': t.marginRequired, 'Margin Bedarf': t.marginRequired,
+        'Daily Financing': t.dailyFinancing, 'Tägliche Finanzierung': t.dailyFinancing,
+        'Free Buffer': t.freeBuffer, 'Freier Puffer': t.freeBuffer,
+        'Margin Call at': t.marginCallAt, 'Margin Call bei': t.marginCallAt,
+        'Stop Loss Risk': t.stopLossRisk, 'Stop Loss Risiko': t.stopLossRisk,
+        'Reward / Risk': t.rewardRisk, 'Chance / Risiko': t.rewardRisk,
+        'Target': t.target, 'Zielkurs': t.target,
+        'Total Financing': t.totalFinancing, 'Finanzierungskosten': t.totalFinancing,
+        'Cost as % of Capital': t.costPctCapital, 'Kosten in % vom Kapital': t.costPctCapital,
+        'Position Value': t.positionValue, 'Positionswert': t.positionValue,
+        'Potential Profit': t.potentialProfit, 'Möglicher Gewinn': t.potentialProfit,
+        'Potential Loss': t.potentialLoss, 'Möglicher Verlust': t.potentialLoss,
+      };
+      if (labelMap[text]) el.textContent = labelMap[text];
+    });
+
+    // Account info row
+    document.querySelectorAll('.account-info-label').forEach(el => {
+      const text = el.textContent.trim();
+      if (text === 'Funds' || text === 'Kapital') el.textContent = t.funds;
+      if (text === 'Margin') el.textContent = t.margin;
+      if (text === 'Available' || text === 'Verfügbar') el.textContent = t.available;
+    });
+
+    // Labels (by for/id association or content)
+    document.querySelectorAll('label').forEach(el => {
+      const text = el.textContent.trim();
+      const lMap = {
+        'Index / Asset Price': t.indexPrice, 'Index / Asset Preis': t.indexPrice,
+        'Price Level Mode': t.priceLevelMode, 'Preislevel Modus': t.priceLevelMode,
+        'Price Level': t.priceLevel, 'Preislevel': t.priceLevel,
+        'Expiry': t.expiry, 'Ablauf': t.expiry,
+        'Desired Leverage': t.desiredLeverage, 'Gewünschter Hebel': t.desiredLeverage,
+        'Size (per point)': t.sizePerPoint, 'Size (pro Punkt)': t.sizePerPoint,
+        'Holding Period': t.holdingPeriod, 'Haltedauer': t.holdingPeriod,
+        'Take Profit': t.takeProfit, 'Gewinnziel': t.takeProfit,
+        'Stop Loss': t.stopLoss, 'Verlustgrenze': t.stopLoss,
+        'Current Price': t.currentPrice, 'Aktueller Preis': t.currentPrice,
+        'Direction': t.direction, 'Richtung': t.direction,
+        'Spread': t.spread,
+        'Investment Value': t.investmentValue, 'Investitionswert': t.investmentValue,
+        'Leverage': t.leverage, 'Hebel': t.leverage,
+        'Account Capital': t.accountCapital, 'Kontokapital': t.accountCapital,
+      };
+      if (lMap[text]) el.textContent = lMap[text];
+    });
+
+    // Mode toggle buttons
+    const modeMap = {
+      'Leverage → Size': t.leverageToSize, 'Hebel → Size': t.leverageToSize,
+      'Size → Leverage': t.sizeToLeverage, 'Size → Hebel': t.sizeToLeverage,
+    };
+    document.querySelectorAll('#modeToggle .mode-btn').forEach(btn => {
+      if (modeMap[btn.textContent.trim()]) btn.textContent = modeMap[btn.textContent.trim()];
+    });
+
+    // Trade type hint
+    if (state.tradeType === 'deal') {
+      els.tradeTypeHint.innerHTML = t.dealExplain;
+    } else {
+      els.tradeTypeHint.innerHTML = t.orderExplain;
+    }
+
+    // Price level mode hint
+    const plmHint = document.getElementById('priceLevelModeHint');
+    if (plmHint) {
+      if (state.priceLevelMode === 'manual') plmHint.innerHTML = t.plmManual;
+      else if (state.priceLevelMode === 'percent') plmHint.innerHTML = t.plmPercent;
+      else plmHint.innerHTML = t.plmPoints;
+    }
+
+    // Hints by ID
+    const hintMap = {
+      'hintSellBuy': t.hintSellBuy,
+      'hintExpiry': t.hintExpiry,
+      'hintLeverage': t.hintLeverage,
+      'hintSize': t.hintSize,
+      'hintHolding': t.hintHolding,
+    };
+    for (const [id, text] of Object.entries(hintMap)) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    }
+  }
+
+  // Language toggle listener
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      applyLanguage(btn.dataset.lang);
+    });
+  });
 
   // ── Register Service Worker (PWA) ──
   if ('serviceWorker' in navigator) {
