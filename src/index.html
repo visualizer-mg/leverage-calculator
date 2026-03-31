@@ -849,22 +849,29 @@
           <div class="card-header">
             <span class="icon">&#128200;</span> P&amp;L Scenarios
           </div>
+
+          <div class="mode-toggle" id="igStopLimitModeToggle">
+            <button class="mode-btn active" data-mode="points">By Points</button>
+            <button class="mode-btn" data-mode="percent">By %</button>
+            <button class="mode-btn" data-mode="price">By Price</button>
+          </div>
+
           <div class="row" style="margin-bottom: 4px;">
             <div class="field">
               <label>Stop Distance</label>
               <div class="input-wrapper">
-                <input type="number" id="stopDistance" value="200" min="1" step="10">
-                <span class="input-suffix">pts</span>
+                <input type="number" id="stopDistance" value="200" min="0" step="10">
+                <span class="input-suffix" id="igStopSuffix">pts</span>
               </div>
-              <div class="hint">Max points against you before auto-close</div>
+              <div class="hint" id="igStopHint">Max points against you before auto-close</div>
             </div>
             <div class="field">
               <label>Limit Distance</label>
               <div class="input-wrapper">
-                <input type="number" id="limitDistance" value="400" min="1" step="10">
-                <span class="input-suffix">pts</span>
+                <input type="number" id="limitDistance" value="400" min="0" step="10">
+                <span class="input-suffix" id="igLimitSuffix">pts</span>
               </div>
-              <div class="hint">Target points in your favor to take profit</div>
+              <div class="hint" id="igLimitHint">Target points in your favor to take profit</div>
             </div>
           </div>
           <div id="scenarioList" style="margin-top: 10px;"></div>
@@ -1092,6 +1099,7 @@
     direction: 'long',
     tradeType: 'deal', // 'deal' or 'order'
     mode: 'leverage-to-size',
+    stopLimitMode: 'points', // 'points', 'percent', 'price'
     symbols: { GBP: '\u00A3', EUR: '\u20AC', USD: '$' },
     annualRate: 0.055,
     marginRate: 0.05,
@@ -1208,6 +1216,58 @@
     });
   });
 
+  // ── Stop/Limit Mode Toggle ──
+  $$('#igStopLimitModeToggle .mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#igStopLimitModeToggle .mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.stopLimitMode = btn.dataset.mode;
+
+      const stopSuffix = $('#igStopSuffix');
+      const limitSuffix = $('#igLimitSuffix');
+      const stopHint = $('#igStopHint');
+      const limitHint = $('#igLimitHint');
+
+      if (state.stopLimitMode === 'points') {
+        stopSuffix.textContent = 'pts';
+        limitSuffix.textContent = 'pts';
+        stopHint.textContent = 'Max points against you before auto-close';
+        limitHint.textContent = 'Target points in your favor to take profit';
+        els.stopDistance.value = '200';
+        els.limitDistance.value = '400';
+        els.stopDistance.step = '10';
+        els.limitDistance.step = '10';
+      } else if (state.stopLimitMode === 'percent') {
+        stopSuffix.textContent = '%';
+        limitSuffix.textContent = '%';
+        stopHint.textContent = 'Max % move against you';
+        limitHint.textContent = 'Target % move in your favor';
+        els.stopDistance.value = '1';
+        els.limitDistance.value = '2';
+        els.stopDistance.step = '0.1';
+        els.limitDistance.step = '0.1';
+      } else {
+        stopSuffix.textContent = sym();
+        limitSuffix.textContent = sym();
+        stopHint.textContent = 'Price level where stop triggers';
+        limitHint.textContent = 'Price level where limit triggers';
+        // Pre-fill with sensible price levels
+        const price = state.direction === 'long'
+          ? (parseFloat(els.buyPrice.value) || 0)
+          : (parseFloat(els.sellPrice.value) || 0);
+        els.stopDistance.value = state.direction === 'long'
+          ? (price - 200).toFixed(0)
+          : (price + 200).toFixed(0);
+        els.limitDistance.value = state.direction === 'long'
+          ? (price + 400).toFixed(0)
+          : (price - 400).toFixed(0);
+        els.stopDistance.step = '1';
+        els.limitDistance.step = '1';
+      }
+      calculate();
+    });
+  });
+
   // ── Input listeners ──
   [els.capital, els.sellPrice, els.buyPrice, els.priceLevel, els.leverage, els.sizeManual,
    els.stopDistance, els.limitDistance, els.holdDays]
@@ -1230,6 +1290,11 @@
   function updateSuffixes() {
     els.capitalSuffix.innerHTML = sym();
     els.sizeSuffix.innerHTML = sym() + '/pt';
+    // Update price-mode suffixes if active
+    if (state.stopLimitMode === 'price') {
+      $('#igStopSuffix').textContent = sym();
+      $('#igLimitSuffix').textContent = sym();
+    }
   }
 
   // ── Core Calculation ──
@@ -1248,9 +1313,23 @@
     const spread = Math.abs(buyPrice - sellPrice);
     els.spreadValue.textContent = fmt(spread, 1);
 
-    const stopDist = parseFloat(els.stopDistance.value) || 0;
-    const limitDist = parseFloat(els.limitDistance.value) || 0;
+    const stopRaw = parseFloat(els.stopDistance.value) || 0;
+    const limitRaw = parseFloat(els.limitDistance.value) || 0;
     const holdDays = parseFloat(els.holdDays.value) || 0;
+
+    // Convert stop/limit to points based on mode
+    let stopDist, limitDist;
+    if (state.stopLimitMode === 'points') {
+      stopDist = stopRaw;
+      limitDist = limitRaw;
+    } else if (state.stopLimitMode === 'percent') {
+      stopDist = price > 0 ? (stopRaw / 100) * price : 0;
+      limitDist = price > 0 ? (limitRaw / 100) * price : 0;
+    } else {
+      // By Price — convert absolute price to distance in points
+      stopDist = Math.abs(price - stopRaw);
+      limitDist = Math.abs(limitRaw - price);
+    }
 
     let size, leverage;
 
