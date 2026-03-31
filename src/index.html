@@ -931,35 +931,35 @@
             <button class="mode-btn" data-mode="price">By Price</button>
           </div>
 
-          <!-- Take Profit Section -->
-          <div style="margin-bottom: 16px;">
-            <label style="margin-bottom: 8px;">Take Profit</label>
-            <div class="field">
-              <div class="input-wrapper">
-                <input type="number" id="igTPInput" value="400" min="0" step="10">
-                <span class="input-suffix" id="igTPSuffix">pts</span>
+          <!-- Take Profit + Stop Loss Side by Side -->
+          <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+            <div style="flex: 1;">
+              <label style="margin-bottom: 8px;">Take Profit</label>
+              <div class="field">
+                <div class="input-wrapper">
+                  <input type="number" id="igTPInput" value="400" min="0" step="10">
+                  <span class="input-suffix" id="igTPSuffix">pts</span>
+                </div>
+              </div>
+              <div class="result-item" style="margin-top: 8px;">
+                <div class="result-label">Target</div>
+                <div class="result-value green" id="igTPTarget" style="font-size: 16px;">22,507</div>
+                <div class="result-sub" id="igTPSub">+400 pts, +£89.32</div>
               </div>
             </div>
-            <div class="result-item" style="margin-top: 8px;">
-              <div class="result-label">Target</div>
-              <div class="result-value green" id="igTPTarget">22,507</div>
-              <div class="result-sub" id="igTPSub">+400 pts, +£89.32</div>
-            </div>
-          </div>
-
-          <!-- Stop Loss Section -->
-          <div style="margin-bottom: 16px;">
-            <label style="margin-bottom: 8px;">Stop Loss</label>
-            <div class="field">
-              <div class="input-wrapper">
-                <input type="number" id="igSLInput" value="200" min="0" step="10">
-                <span class="input-suffix" id="igSLSuffix">pts</span>
+            <div style="flex: 1;">
+              <label style="margin-bottom: 8px;">Stop Loss</label>
+              <div class="field">
+                <div class="input-wrapper">
+                  <input type="number" id="igSLInput" value="200" min="0" step="10">
+                  <span class="input-suffix" id="igSLSuffix">pts</span>
+                </div>
               </div>
-            </div>
-            <div class="result-item" style="margin-top: 8px;">
-              <div class="result-label">Target</div>
-              <div class="result-value red" id="igSLTarget">21,907</div>
-              <div class="result-sub" id="igSLSub">-200 pts, -£45.45</div>
+              <div class="result-item" style="margin-top: 8px;">
+                <div class="result-label">Target</div>
+                <div class="result-value red" id="igSLTarget" style="font-size: 16px;">21,907</div>
+                <div class="result-sub" id="igSLSub">-200 pts, -£45.45</div>
+              </div>
             </div>
           </div>
 
