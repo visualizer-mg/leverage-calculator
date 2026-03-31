@@ -124,7 +124,12 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      align-items: start;
+      align-items: stretch;
+    }
+
+    #ig-markets-tab .top-row > .card {
+      display: flex;
+      flex-direction: column;
     }
 
     #ig-markets-tab .full-width {
@@ -585,6 +590,28 @@
       font-size: 11px;
       min-width: 55px;
       text-align: right;
+    }
+
+    .scenario-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      margin: 2px 0;
+    }
+
+    .scenario-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .scenario-divider-price {
+      color: #22d3ee;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      white-space: nowrap;
     }
 
     /* ── Risk Warning Banner ── */
@@ -1592,11 +1619,24 @@
 
     // For P&L: subtract spread cost, show target price
     let html = '';
+    let insertedDivider = false;
     scenarios.forEach(s => {
       const pnl = (s.points * size) - (spread * size); // spread is always a cost
       const pnlPct = capital > 0 ? (pnl / capital) * 100 : 0;
       const isPos = pnl >= 0;
       const labelText = s.label ? ` <span style="font-size:9px;opacity:0.6">${s.label}</span>` : '';
+
+      // Insert entry price divider between profit and loss rows
+      if (!insertedDivider && s.points < 0) {
+        insertedDivider = true;
+        const entryLabel = state.language === 'de' ? 'Einstieg' : 'Entry';
+        html += `
+        <div class="scenario-divider">
+          <span class="scenario-divider-line"></span>
+          <span class="scenario-divider-price">${fmt(price, 1)} — ${entryLabel}</span>
+          <span class="scenario-divider-line"></span>
+        </div>`;
+      }
 
       // Target price: for long, price + points; for short, price - points
       const targetPrice = state.direction === 'long'
@@ -1903,6 +1943,7 @@
     scenarios.sort((a, b) => b.price - a.price);
 
     let html = '';
+    let t212DividerInserted = false;
     scenarios.forEach(s => {
       const priceChange = s.price - price;
       const pctChange = price > 0 ? (priceChange / price) * 100 : 0;
@@ -1910,6 +1951,18 @@
       const pnl = shares * priceChange;
       const isPos = pnl >= 0;
       const labelText = s.label ? ` <span style="font-size:9px;opacity:0.6">${s.label}</span>` : '';
+
+      // Insert entry price divider between profit and loss rows
+      if (!t212DividerInserted && priceChange < 0) {
+        t212DividerInserted = true;
+        const entryLabel = state.language === 'de' ? 'Einstieg' : 'Entry';
+        html += `
+        <div class="scenario-divider">
+          <span class="scenario-divider-line"></span>
+          <span class="scenario-divider-price">${t212Fmt(price, 2)} — ${entryLabel}</span>
+          <span class="scenario-divider-line"></span>
+        </div>`;
+      }
 
       html += `
         <div class="scenario-row">
